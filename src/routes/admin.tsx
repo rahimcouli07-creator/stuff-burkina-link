@@ -8,9 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   fetchAnnonces,
   fetchCategories,
+  fetchOffres,
   fetchRegions,
   fetchVilles,
   formatPrix,
+  normalizePhone,
+  uploadImage,
 } from "@/lib/market";
 
 export const Route = createFileRoute("/admin")({
