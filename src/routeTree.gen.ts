@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AideRouteImport } from './routes/aide'
+import { Route as MesAnnoncesRouteImport } from './routes/mes-annonces'
+import { Route as ParametresRouteImport } from './routes/parametres'
+import { Route as PublierRouteImport } from './routes/publier'
+import { Route as AnnonceIdRouteImport } from './routes/annonce.$id'
+import { Route as BoostIdRouteImport } from './routes/boost.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AideRoute = AideRouteImport.update({
+  id: '/aide',
+  path: '/aide',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MesAnnoncesRoute = MesAnnoncesRouteImport.update({
+  id: '/mes-annonces',
+  path: '/mes-annonces',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParametresRoute = ParametresRouteImport.update({
+  id: '/parametres',
+  path: '/parametres',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublierRoute = PublierRouteImport.update({
+  id: '/publier',
+  path: '/publier',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnonceIdRoute = AnnonceIdRouteImport.update({
+  id: '/annonce/$id',
+  path: '/annonce/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoostIdRoute = BoostIdRouteImport.update({
+  id: '/boost/$id',
+  path: '/boost/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/aide': typeof AideRoute
+  '/mes-annonces': typeof MesAnnoncesRoute
+  '/parametres': typeof ParametresRoute
+  '/publier': typeof PublierRoute
+  '/annonce/$id': typeof AnnonceIdRoute
+  '/boost/$id': typeof BoostIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aide': typeof AideRoute
+  '/mes-annonces': typeof MesAnnoncesRoute
+  '/parametres': typeof ParametresRoute
+  '/publier': typeof PublierRoute
+  '/annonce/$id': typeof AnnonceIdRoute
+  '/boost/$id': typeof BoostIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/aide': typeof AideRoute
+  '/mes-annonces': typeof MesAnnoncesRoute
+  '/parametres': typeof ParametresRoute
+  '/publier': typeof PublierRoute
+  '/annonce/$id': typeof AnnonceIdRoute
+  '/boost/$id': typeof BoostIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/aide'
+    | '/mes-annonces'
+    | '/parametres'
+    | '/publier'
+    | '/annonce/$id'
+    | '/boost/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/aide'
+    | '/mes-annonces'
+    | '/parametres'
+    | '/publier'
+    | '/annonce/$id'
+    | '/boost/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/aide'
+    | '/mes-annonces'
+    | '/parametres'
+    | '/publier'
+    | '/annonce/$id'
+    | '/boost/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AideRoute: typeof AideRoute
+  MesAnnoncesRoute: typeof MesAnnoncesRoute
+  ParametresRoute: typeof ParametresRoute
+  PublierRoute: typeof PublierRoute
+  AnnonceIdRoute: typeof AnnonceIdRoute
+  BoostIdRoute: typeof BoostIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/aide': {
+      id: '/aide'
+      path: '/aide'
+      fullPath: '/aide'
+      preLoaderRoute: typeof AideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mes-annonces': {
+      id: '/mes-annonces'
+      path: '/mes-annonces'
+      fullPath: '/mes-annonces'
+      preLoaderRoute: typeof MesAnnoncesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parametres': {
+      id: '/parametres'
+      path: '/parametres'
+      fullPath: '/parametres'
+      preLoaderRoute: typeof ParametresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/publier': {
+      id: '/publier'
+      path: '/publier'
+      fullPath: '/publier'
+      preLoaderRoute: typeof PublierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/annonce/$id': {
+      id: '/annonce/$id'
+      path: '/annonce/$id'
+      fullPath: '/annonce/$id'
+      preLoaderRoute: typeof AnnonceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boost/$id': {
+      id: '/boost/$id'
+      path: '/boost/$id'
+      fullPath: '/boost/$id'
+      preLoaderRoute: typeof BoostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AideRoute: AideRoute,
+  MesAnnoncesRoute: MesAnnoncesRoute,
+  ParametresRoute: ParametresRoute,
+  PublierRoute: PublierRoute,
+  AnnonceIdRoute: AnnonceIdRoute,
+  BoostIdRoute: BoostIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
