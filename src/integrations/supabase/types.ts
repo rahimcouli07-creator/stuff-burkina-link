@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      annonces: {
+        Row: {
+          categorie: string | null
+          created_at: string
+          description: string | null
+          etat: string | null
+          id: string
+          image_url: string | null
+          is_boosted: boolean
+          prix: number
+          region: string | null
+          titre: string
+          ville: string | null
+          whatsapp: string
+        }
+        Insert: {
+          categorie?: string | null
+          created_at?: string
+          description?: string | null
+          etat?: string | null
+          id?: string
+          image_url?: string | null
+          is_boosted?: boolean
+          prix?: number
+          region?: string | null
+          titre: string
+          ville?: string | null
+          whatsapp: string
+        }
+        Update: {
+          categorie?: string | null
+          created_at?: string
+          description?: string | null
+          etat?: string | null
+          id?: string
+          image_url?: string | null
+          is_boosted?: boolean
+          prix?: number
+          region?: string | null
+          titre?: string
+          ville?: string | null
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          id: string
+          nom: string
+        }
+        Insert: {
+          id?: string
+          nom: string
+        }
+        Update: {
+          id?: string
+          nom?: string
+        }
+        Relationships: []
+      }
+      regions: {
+        Row: {
+          id: string
+          nom: string
+        }
+        Insert: {
+          id?: string
+          nom: string
+        }
+        Update: {
+          id?: string
+          nom?: string
+        }
+        Relationships: []
+      }
+      villes: {
+        Row: {
+          id: string
+          nom_ville: string
+          region: string
+        }
+        Insert: {
+          id?: string
+          nom_ville: string
+          region: string
+        }
+        Update: {
+          id?: string
+          nom_ville?: string
+          region?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
