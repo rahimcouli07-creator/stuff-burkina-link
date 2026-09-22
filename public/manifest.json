@@ -1,0 +1,15 @@
+{
+  "name": "Stuff Market",
+  "short_name": "Stuff Market",
+  "description": "Marketplace seconde main au Burkina Faso",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#EF2B2D",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
