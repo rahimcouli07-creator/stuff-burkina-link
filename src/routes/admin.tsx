@@ -8,9 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   fetchAnnonces,
   fetchCategories,
+  fetchOffres,
   fetchRegions,
   fetchVilles,
   formatPrix,
+  normalizePhone,
+  uploadImage,
 } from "@/lib/market";
 
 export const Route = createFileRoute("/admin")({
@@ -49,6 +52,46 @@ function AdminPanel() {
   const [nouvelleVille, setNouvelleVille] = useState("");
   const [villeRegion, setVilleRegion] = useState("");
   const [nouvelleCategorie, setNouvelleCategorie] = useState("");
+
+  const offres = useQuery({ queryKey: ["offres"], queryFn: fetchOffres });
+  const [offreTitre, setOffreTitre] = useState("");
+  const [offreDescription, setOffreDescription] = useState("");
+  const [offrePrix, setOffrePrix] = useState("");
+  const [offreWhatsapp, setOffreWhatsapp] = useState("");
+  const [offreImage, setOffreImage] = useState<File | null>(null);
+  const [offreEnCours, setOffreEnCours] = useState(false);
+
+  async function ajouterOffre() {
+    if (!offreTitre.trim()) {
+      toast.error("Le titre est obligatoire");
+      return;
+    }
+    setOffreEnCours(true);
+    try {
+      let imageUrl: string | null = null;
+      if (offreImage) imageUrl = await uploadImage(offreImage);
+      const tel = normalizePhone(offreWhatsapp);
+      const { error } = await supabase.from("offres").insert({
+        titre: offreTitre.trim(),
+        description: offreDescription.trim() || null,
+        prix: offrePrix ? Number(offrePrix) : null,
+        whatsapp: tel ? (tel.startsWith("226") ? tel : `226${tel}`) : null,
+        image_url: imageUrl,
+      });
+      if (error) throw error;
+      setOffreTitre("");
+      setOffreDescription("");
+      setOffrePrix("");
+      setOffreWhatsapp("");
+      setOffreImage(null);
+      queryClient.invalidateQueries({ queryKey: ["offres"] });
+      toast.success("Offre publiée");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setOffreEnCours(false);
+    }
+  }
 
   const liste = annonces.data ?? [];
   const boostees = liste.filter((a) => a.is_boosted).length;

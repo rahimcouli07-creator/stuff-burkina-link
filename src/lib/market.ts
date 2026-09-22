@@ -19,6 +19,26 @@ export type Annonce = {
   created_at: string;
 };
 
+export type Offre = {
+  id: string;
+  titre: string;
+  description: string | null;
+  image_url: string | null;
+  prix: number | null;
+  whatsapp: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export async function fetchOffres() {
+  const { data, error } = await supabase
+    .from("offres")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Offre[];
+}
+
 export function formatPrix(prix: number) {
   return new Intl.NumberFormat("fr-FR").format(prix) + " FCFA";
 }

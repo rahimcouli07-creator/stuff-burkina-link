@@ -74,6 +74,39 @@ export type Database = {
         }
         Relationships: []
       }
+      offres: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          prix: number | null
+          titre: string
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          prix?: number | null
+          titre: string
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          prix?: number | null
+          titre?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       regions: {
         Row: {
           id: string

@@ -1,10 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, HelpCircle, Settings, ListChecks, Plus } from "lucide-react";
+import { Home, HelpCircle, Settings, ListChecks, Plus, Tag } from "lucide-react";
 import type { ReactNode } from "react";
 import logo from "@/assets/logo.png";
 
 const navItems = [
   { to: "/", label: "Accueil", icon: Home },
+  { to: "/offres", label: "Offres", icon: Tag },
   { to: "/mes-annonces", label: "Mes annonces", icon: ListChecks },
   { to: "/aide", label: "Aide", icon: HelpCircle },
   { to: "/parametres", label: "Réglages", icon: Settings },

@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AideRouteImport } from './routes/aide'
 import { Route as MesAnnoncesRouteImport } from './routes/mes-annonces'
+import { Route as OffresRouteImport } from './routes/offres'
 import { Route as ParametresRouteImport } from './routes/parametres'
 import { Route as PublierRouteImport } from './routes/publier'
 import { Route as AnnonceIdRouteImport } from './routes/annonce.$id'
@@ -36,6 +37,11 @@ const AideRoute = AideRouteImport.update({
 const MesAnnoncesRoute = MesAnnoncesRouteImport.update({
   id: '/mes-annonces',
   path: '/mes-annonces',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OffresRoute = OffresRouteImport.update({
+  id: '/offres',
+  path: '/offres',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParametresRoute = ParametresRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/aide': typeof AideRoute
   '/mes-annonces': typeof MesAnnoncesRoute
+  '/offres': typeof OffresRoute
   '/parametres': typeof ParametresRoute
   '/publier': typeof PublierRoute
   '/annonce/$id': typeof AnnonceIdRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/aide': typeof AideRoute
   '/mes-annonces': typeof MesAnnoncesRoute
+  '/offres': typeof OffresRoute
   '/parametres': typeof ParametresRoute
   '/publier': typeof PublierRoute
   '/annonce/$id': typeof AnnonceIdRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/aide': typeof AideRoute
   '/mes-annonces': typeof MesAnnoncesRoute
+  '/offres': typeof OffresRoute
   '/parametres': typeof ParametresRoute
   '/publier': typeof PublierRoute
   '/annonce/$id': typeof AnnonceIdRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/aide'
     | '/mes-annonces'
+    | '/offres'
     | '/parametres'
     | '/publier'
     | '/annonce/$id'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/aide'
     | '/mes-annonces'
+    | '/offres'
     | '/parametres'
     | '/publier'
     | '/annonce/$id'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/aide'
     | '/mes-annonces'
+    | '/offres'
     | '/parametres'
     | '/publier'
     | '/annonce/$id'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AideRoute: typeof AideRoute
   MesAnnoncesRoute: typeof MesAnnoncesRoute
+  OffresRoute: typeof OffresRoute
   ParametresRoute: typeof ParametresRoute
   PublierRoute: typeof PublierRoute
   AnnonceIdRoute: typeof AnnonceIdRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/mes-annonces'
       fullPath: '/mes-annonces'
       preLoaderRoute: typeof MesAnnoncesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offres': {
+      id: '/offres'
+      path: '/offres'
+      fullPath: '/offres'
+      preLoaderRoute: typeof OffresRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/parametres': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AideRoute: AideRoute,
   MesAnnoncesRoute: MesAnnoncesRoute,
+  OffresRoute: OffresRoute,
   ParametresRoute: ParametresRoute,
   PublierRoute: PublierRoute,
   AnnonceIdRoute: AnnonceIdRoute,
