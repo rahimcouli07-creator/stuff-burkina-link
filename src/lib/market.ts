@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const ADMIN_PASSWORD = "Stuff2025";
 export const ADMIN_WHATSAPP = "22664601944";
-export const PAYMENT_NUMBER = "07XXXXXXX";
+export const PAYMENT_NUMBER = "64601944";
 
 export type Annonce = {
   id: string;
