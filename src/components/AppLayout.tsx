@@ -22,7 +22,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <Link to="/" className="flex items-center gap-2">
             <img src={logo} alt="Stuff Market" width={40} height={40} className="h-10 w-10" />
             <span className="text-lg font-extrabold tracking-tight text-foreground">
-              Stuff <span className="text-primary">Market</span>
+              STUFF <span className="text-primary">MARKET</span>
             </span>
           </Link>
           <span className="ml-auto rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">

@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Share2, X } from "lucide-react";
 import { toast } from "sonner";
 
-export const SHARE_TITLE = "Stuff Market Tenkodogo";
+export const SHARE_TITLE = "Stuff Market";
 
 export function buildShareText(domaine: string) {
-  return `🔥 STUFF MARKET TENKODOGO
+  return `🔥 STUFF MARKET - Le marketplace #1 !
 Le meilleur coin pour acheter et vendre à Tenkodogo, Garango, Koupéla !
 
 📱 Téléphones, 🏍️ Motos, 👕 Vêtements, 👟 Chaussures, tout y est.
