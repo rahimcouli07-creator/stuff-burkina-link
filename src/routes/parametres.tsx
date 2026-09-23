@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { ShareApp } from "@/components/ShareApp";
 import { ADMIN_PASSWORD } from "@/lib/market";
 
 export const Route = createFileRoute("/parametres")({
@@ -35,6 +36,10 @@ function Parametres() {
         <p className="text-muted-foreground">Marketplace seconde main au Burkina Faso.</p>
         <p className="text-muted-foreground">Version 1.0</p>
         <p className="text-muted-foreground">Publication gratuite, contact direct par WhatsApp.</p>
+      </div>
+
+      <div className="mt-4">
+        <ShareApp variant="button" />
       </div>
 
       <div className="mt-10 text-center">
