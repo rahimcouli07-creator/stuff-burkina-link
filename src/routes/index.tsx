@@ -14,13 +14,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Stuff Market - Marketplace seconde main au Burkina Faso" },
+      { title: "Stuff Market - Achète & Vends vite au Burkina" },
       {
         name: "description",
         content:
           "Achetez et vendez d'occasion au Burkina Faso : livres, tenues, chaussures, téléphones. Contact direct par WhatsApp.",
       },
-      { property: "og:title", content: "Stuff Market - Seconde main au Burkina Faso" },
+      { property: "og:title", content: "Stuff Market - Achète & Vends vite" },
       {
         property: "og:description",
         content: "Trouvez des bonnes affaires près de chez vous, ville par ville.",
@@ -37,8 +37,8 @@ export const Route = createFileRoute("/")({
 
 function Accueil() {
   const queryClient = useQueryClient();
-  const [region, setRegion] = useState("");
-  const [ville, setVille] = useState("");
+  const [region, setRegion] = useState("Centre-Est");
+  const [ville, setVille] = useState("Tenkodogo");
   const [categorie, setCategorie] = useState("");
   const [recherche, setRecherche] = useState("");
 
