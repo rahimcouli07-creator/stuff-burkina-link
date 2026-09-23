@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, HelpCircle, Settings, ListChecks, Plus, Tag } from "lucide-react";
 import type { ReactNode } from "react";
 import logo from "@/assets/logo.png";
+import { ShareApp } from "@/components/ShareApp";
 
 const navItems = [
   { to: "/", label: "Accueil", icon: Home },
@@ -27,6 +28,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <span className="ml-auto rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
             Burkina Faso
           </span>
+          <ShareApp />
         </div>
       </header>
 
