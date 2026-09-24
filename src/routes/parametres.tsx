@@ -1,8 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { ShareApp } from "@/components/ShareApp";
-import { ADMIN_PASSWORD } from "@/lib/market";
 
 export const Route = createFileRoute("/parametres")({
   head: () => ({
@@ -23,9 +21,6 @@ export const Route = createFileRoute("/parametres")({
 
 function Parametres() {
   const navigate = useNavigate();
-  const [demande, setDemande] = useState(false);
-  const [motDePasse, setMotDePasse] = useState("");
-  const [erreur, setErreur] = useState(false);
 
   return (
     <AppLayout>
@@ -43,41 +38,12 @@ function Parametres() {
       </div>
 
       <div className="mt-10 text-center">
-        {demande ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (motDePasse === ADMIN_PASSWORD) {
-                navigate({ to: "/admin" });
-              } else {
-                setErreur(true);
-              }
-            }}
-            className="mx-auto max-w-xs space-y-2"
-          >
-            <input
-              type="password"
-              value={motDePasse}
-              onChange={(e) => setMotDePasse(e.target.value)}
-              placeholder="Mot de passe"
-              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-            />
-            {erreur ? <p className="text-sm text-destructive">Mot de passe incorrect</p> : null}
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-            >
-              Valider
-            </button>
-          </form>
-        ) : (
-          <button
-            onClick={() => setDemande(true)}
-            className="text-xs text-muted-foreground underline"
-          >
-            Admin
-          </button>
-        )}
+        <button
+          onClick={() => navigate({ to: "/admin" })}
+          className="text-xs text-muted-foreground underline"
+        >
+          Admin
+        </button>
       </div>
     </AppLayout>
   );
