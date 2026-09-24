@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AideRouteImport } from './routes/aide'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as MesAnnoncesRouteImport } from './routes/mes-annonces'
 import { Route as OffresRouteImport } from './routes/offres'
 import { Route as ParametresRouteImport } from './routes/parametres'
@@ -32,6 +33,11 @@ const AdminRoute = AdminRouteImport.update({
 const AideRoute = AideRouteImport.update({
   id: '/aide',
   path: '/aide',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MesAnnoncesRoute = MesAnnoncesRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/aide': typeof AideRoute
+  '/auth': typeof AuthRoute
   '/mes-annonces': typeof MesAnnoncesRoute
   '/offres': typeof OffresRoute
   '/parametres': typeof ParametresRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/aide': typeof AideRoute
+  '/auth': typeof AuthRoute
   '/mes-annonces': typeof MesAnnoncesRoute
   '/offres': typeof OffresRoute
   '/parametres': typeof ParametresRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/aide': typeof AideRoute
+  '/auth': typeof AuthRoute
   '/mes-annonces': typeof MesAnnoncesRoute
   '/offres': typeof OffresRoute
   '/parametres': typeof ParametresRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/aide'
+    | '/auth'
     | '/mes-annonces'
     | '/offres'
     | '/parametres'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/aide'
+    | '/auth'
     | '/mes-annonces'
     | '/offres'
     | '/parametres'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/aide'
+    | '/auth'
     | '/mes-annonces'
     | '/offres'
     | '/parametres'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AideRoute: typeof AideRoute
+  AuthRoute: typeof AuthRoute
   MesAnnoncesRoute: typeof MesAnnoncesRoute
   OffresRoute: typeof OffresRoute
   ParametresRoute: typeof ParametresRoute
@@ -168,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/aide'
       fullPath: '/aide'
       preLoaderRoute: typeof AideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mes-annonces': {
@@ -219,6 +239,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AideRoute: AideRoute,
+  AuthRoute: AuthRoute,
   MesAnnoncesRoute: MesAnnoncesRoute,
   OffresRoute: OffresRoute,
   ParametresRoute: ParametresRoute,

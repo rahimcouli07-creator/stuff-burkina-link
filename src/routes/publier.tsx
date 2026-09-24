@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
+import { LoginRequired } from "@/components/LoginRequired";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchCategories,
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/publier")({
 
 function Publier() {
   const navigate = useNavigate();
+  const auth = useAuth();
   const regions = useQuery({ queryKey: ["regions"], queryFn: fetchRegions });
   const villes = useQuery({ queryKey: ["villes"], queryFn: fetchVilles });
   const categories = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
@@ -84,6 +87,15 @@ function Publier() {
   }
 
   const inputClass = "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm";
+
+  if (!auth.loading && !auth.user) {
+    return (
+      <AppLayout>
+        <h1 className="text-xl font-extrabold text-foreground">Publier une annonce</h1>
+        <LoginRequired message="Connectez-vous pour publier une annonce." />
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
