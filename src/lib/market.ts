@@ -40,20 +40,6 @@ export type Service = {
   status: string | null;
 };
 
-export type Business = {
-  id: string;
-  user_id: string;
-  name: string;
-  description: string | null;
-  category: string | null;
-  city: string | null;
-  address: string | null;
-  whatsapp_phone: string | null;
-  photo_urls: string[] | null;
-  created_at: string;
-  updated_at: string;
-};
-
 export async function fetchServices() {
   const { data, error } = await supabase
     .from("services")
@@ -63,6 +49,14 @@ export async function fetchServices() {
   if (error) throw error;
 
   return (data ?? []) as Service[];
+}
+
+export function formatPrix(prix: number) {
+  return new Intl.NumberFormat("fr-FR").format(prix) + " FCFA";
+}
+
+export function normalizePhone(value: string) {
+  return value.replace(/\D/g, "");
 }
 
 export async function fetchAnnonces() {
@@ -86,25 +80,6 @@ export async function fetchAnnonce(id: string) {
   if (error) throw error;
 
   return data as Annonce | null;
-}
-
-export async function fetchBusinesses() {
-  const { data, error } = await supabase
-    .from("businesses")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-
-  return (data ?? []) as Business[];
-}
-
-export function formatPrix(prix: number) {
-  return new Intl.NumberFormat("fr-FR").format(prix) + " FCFA";
-}
-
-export function normalizePhone(value: string) {
-  return value.replace(/\D/g, "");
 }
 
 export async function uploadImage(file: File) {
