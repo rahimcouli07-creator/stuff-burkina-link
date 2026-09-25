@@ -4,309 +4,426 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[]
+  | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   public: {
     Tables: {
-      annonces: {
+      admin_users: {
         Row: {
-          categorie: string | null
-          created_at: string
-          description: string | null
-          etat: string | null
-          id: string
-          image_url: string | null
-          is_boosted: boolean
-          prix: number
-          region: string | null
-          titre: string
-          user_id: string | null
-          ville: string | null
-          whatsapp: string
-        }
+          id: string;
+          email: string;
+          role: string;
+          can_manage_ads: boolean;
+          can_manage_offers: boolean;
+          can_manage_users: boolean;
+          created_at: string;
+          whatsapp_phone: string | null;
+          whatsapp_verified: boolean;
+        };
         Insert: {
-          categorie?: string | null
-          created_at?: string
-          description?: string | null
-          etat?: string | null
-          id?: string
-          image_url?: string | null
-          is_boosted?: boolean
-          prix?: number
-          region?: string | null
-          titre: string
-          user_id?: string | null
-          ville?: string | null
-          whatsapp: string
-        }
+          id?: string;
+          email: string;
+          role?: string;
+          can_manage_ads?: boolean;
+          can_manage_offers?: boolean;
+          can_manage_users?: boolean;
+          created_at?: string;
+          whatsapp_phone?: string | null;
+          whatsapp_verified?: boolean;
+        };
         Update: {
-          categorie?: string | null
-          created_at?: string
-          description?: string | null
-          etat?: string | null
-          id?: string
-          image_url?: string | null
-          is_boosted?: boolean
-          prix?: number
-          region?: string | null
-          titre?: string
-          user_id?: string | null
-          ville?: string | null
-          whatsapp?: string
-        }
-        Relationships: []
-      }
-      categories: {
+          id?: string;
+          email?: string;
+          role?: string;
+          can_manage_ads?: boolean;
+          can_manage_offers?: boolean;
+          can_manage_users?: boolean;
+          created_at?: string;
+          whatsapp_phone?: string | null;
+          whatsapp_verified?: boolean;
+        };
+        Relationships: [];
+      };
+
+      ads: {
         Row: {
-          id: string
-          nom: string
-        }
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          category: string | null;
+          price: number | null;
+          location: string | null;
+          whatsapp_phone: string | null;
+          created_at: string;
+          updated_at: string;
+          photo_urls: string[] | null;
+          business_id: string | null;
+          auction_enabled: boolean;
+          auction_start_price: number | null;
+          auction_end_at: string | null;
+          reference: string | null;
+          allow_negotiation: boolean;
+          status: string | null;
+        };
         Insert: {
-          id?: string
-          nom: string
-        }
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          category?: string | null;
+          price?: number | null;
+          location?: string | null;
+          whatsapp_phone?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          photo_urls?: string[] | null;
+          business_id?: string | null;
+          auction_enabled?: boolean;
+          auction_start_price?: number | null;
+          auction_end_at?: string | null;
+          reference?: string | null;
+          allow_negotiation?: boolean;
+          status?: string | null;
+        };
         Update: {
-          id?: string
-          nom?: string
-        }
-        Relationships: []
-      }
-      offres: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string | null;
+          category?: string | null;
+          price?: number | null;
+          location?: string | null;
+          whatsapp_phone?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          photo_urls?: string[] | null;
+          business_id?: string | null;
+          auction_enabled?: boolean;
+          auction_start_price?: number | null;
+          auction_end_at?: string | null;
+          reference?: string | null;
+          allow_negotiation?: boolean;
+          status?: string | null;
+        };
+        Relationships: [];
+      };
+
+      businesses: {
         Row: {
-          created_at: string
-          description: string | null
-          id: string
-          image_url: string | null
-          is_active: boolean
-          prix: number | null
-          titre: string
-          user_id: string | null
-          whatsapp: string | null
-        }
+          id: string;
+          user_id: string;
+          name: string;
+          description: string | null;
+          category: string | null;
+          city: string | null;
+          address: string | null;
+          whatsapp_phone: string | null;
+          photo_urls: string[] | null;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean
-          prix?: number | null
-          titre: string
-          user_id?: string | null
-          whatsapp?: string | null
-        }
+          id?: string;
+          user_id: string;
+          name: string;
+          description?: string | null;
+          category?: string | null;
+          city?: string | null;
+          address?: string | null;
+          whatsapp_phone?: string | null;
+          photo_urls?: string[] | null;
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean
-          prix?: number | null
-          titre?: string
-          user_id?: string | null
-          whatsapp?: string | null
-        }
-        Relationships: []
-      }
-      regions: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          description?: string | null;
+          category?: string | null;
+          city?: string | null;
+          address?: string | null;
+          whatsapp_phone?: string | null;
+          photo_urls?: string[] | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+
+      favorites: {
         Row: {
-          id: string
-          nom: string
-        }
+          id: string;
+          user_id: string;
+          ad_id: string | null;
+          service_id: string | null;
+          created_at: string;
+        };
         Insert: {
-          id?: string
-          nom: string
-        }
+          id?: string;
+          user_id: string;
+          ad_id?: string | null;
+          service_id?: string | null;
+          created_at?: string;
+        };
         Update: {
-          id?: string
-          nom?: string
-        }
-        Relationships: []
-      }
-      user_roles: {
+          id?: string;
+          user_id?: string;
+          ad_id?: string | null;
+          service_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+
+      notifications: {
         Row: {
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          id: string;
+          user_id: string;
+          title: string;
+          message: string;
+          type: string;
+          is_read: boolean;
+          created_at: string;
+        };
         Insert: {
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          id?: string;
+          user_id: string;
+          title: string;
+          message: string;
+          type: string;
+          is_read?: boolean;
+          created_at?: string;
+        };
         Update: {
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
-      villes: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          message?: string;
+          type?: string;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+
+      profiles: {
         Row: {
-          id: string
-          nom_ville: string
-          region: string
-        }
+          id: string;
+          email: string;
+          whatsapp_phone: string | null;
+          whatsapp_verified: boolean;
+          created_at: string;
+          first_name: string | null;
+          last_name: string | null;
+          city: string | null;
+          stuff_id: string | null;
+        };
         Insert: {
-          id?: string
-          nom_ville: string
-          region: string
-        }
+          id: string;
+          email: string;
+          whatsapp_phone?: string | null;
+          whatsapp_verified?: boolean;
+          created_at?: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          city?: string | null;
+          stuff_id?: string | null;
+        };
         Update: {
-          id?: string
-          nom_ville?: string
-          region?: string
-        }
-        Relationships: []
-      }
-    }
+          id?: string;
+          email?: string;
+          whatsapp_phone?: string | null;
+          whatsapp_verified?: boolean;
+          created_at?: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          city?: string | null;
+          stuff_id?: string | null;
+        };
+        Relationships: [];
+      };
+
+      reports: {
+        Row: {
+          id: string;
+          user_id: string;
+          ad_id: string | null;
+          service_id: string | null;
+          reason: string;
+          description: string | null;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          ad_id?: string | null;
+          service_id?: string | null;
+          reason: string;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          ad_id?: string | null;
+          service_id?: string | null;
+          reason?: string;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+
+      services: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          category: string | null;
+          price: number | null;
+          whatsapp_phone: string | null;
+          created_at: string;
+          updated_at: string;
+          reference: string | null;
+          allow_negotiation: boolean;
+          location: string | null;
+          status: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          category?: string | null;
+          price?: number | null;
+          whatsapp_phone?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          reference?: string | null;
+          allow_negotiation?: boolean;
+          location?: string | null;
+          status?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string | null;
+          category?: string | null;
+          price?: number | null;
+          whatsapp_phone?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          reference?: string | null;
+          allow_negotiation?: boolean;
+          location?: string | null;
+          status?: string | null;
+        };
+        Relationships: [];
+      };
+    };
+
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
+
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-    }
+      [_ in never]: never;
+    };
+
     Enums: {
-      app_role: "admin" | "user"
-    }
+      [_ in never]: never;
+    };
+
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
-
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+      [_ in never]: never;
+    };
+  };
+};
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends {
+    schema: keyof Database;
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends {
+  schema: keyof Database;
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Row: infer R;
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+    ? Database["public"]["Tables"][PublicTableNameOrOptions]["Row"]
+    : never;
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends {
+    schema: keyof Database;
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends {
+  schema: keyof Database;
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+    ? Database["public"]["Tables"][PublicTableNameOrOptions]["Insert"]
+    : never;
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends {
+    schema: keyof Database;
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends {
+  schema: keyof Database;
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+    ? Database["public"]["Tables"][PublicTableNameOrOptions]["Update"]
+    : never;
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+  PublicEnumNameOrOptions extends
+    | keyof Database["public"]["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends {
+    schema: keyof Database;
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = PublicEnumNameOrOptions extends {
+  schema: keyof Database;
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  public: {
-    Enums: {
-      app_role: ["admin", "user"],
-    },
-  },
-} as const
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
+    ? Database["public"]["Enums"][PublicEnumNameOrOptions]
+    : never;
