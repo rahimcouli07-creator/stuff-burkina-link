@@ -8,6 +8,8 @@ export function PasswordGate({ children }: { children: ReactNode }) {
   if (loading) return <p className="mt-6 text-sm text-muted-foreground">Chargement...</p>;
   if (!user) return <LoginRequired message="Connectez-vous avec le compte administrateur." />;
   if (!isAdmin)
-    return <p className="mt-6 text-sm text-destructive">Ce compte n'a pas les droits administrateur.</p>;
+    return (
+      <p className="mt-6 text-sm text-destructive">Ce compte n'a pas les droits administrateur.</p>
+    );
   return <>{children}</>;
 }

@@ -29,6 +29,13 @@
       "when": 1790273309583,
       "tag": "0003_secure_rls_ownership_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790315566052,
+      "tag": "0004_secure_images_storage",
+      "breakpoints": true
     }
   ]
 }

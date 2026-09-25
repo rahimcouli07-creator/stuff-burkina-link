@@ -58,13 +58,35 @@ function AuthPage() {
         {mode === "login" ? "Connexion" : "Créer un compte"}
       </h1>
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
-        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className={inputClass} />
-        <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mot de passe" className={inputClass} />
-        <button type="submit" disabled={busy} className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          className={inputClass}
+        />
+        <input
+          type="password"
+          required
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Mot de passe"
+          className={inputClass}
+        />
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+        >
           {busy ? "..." : mode === "login" ? "Se connecter" : "Créer mon compte"}
         </button>
       </form>
-      <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="mt-4 w-full text-sm text-muted-foreground underline">
+      <button
+        onClick={() => setMode(mode === "login" ? "signup" : "login")}
+        className="mt-4 w-full text-sm text-muted-foreground underline"
+      >
         {mode === "login" ? "Pas de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
       </button>
     </AppLayout>
