@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAnnonces, formatPrix } from "@/lib/market";
+import { formatPrix } from "@/lib/market";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Achetez et vendez au Burkina Faso. Trouvez des articles près de chez vous et contactez directement les vendeurs.",
+          "Achetez et vendez d'occasion au Burkina Faso. Contact direct par WhatsApp.",
       },
       {
         property: "og:title",
@@ -21,39 +21,70 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:description",
-        content:
-          "Trouvez des bonnes affaires près de chez vous au Burkina Faso.",
+        content: "Trouvez de bonnes affaires au Burkina Faso.",
       },
       { property: "og:type", content: "website" },
-      {
-        property: "og:url",
-        content: "https://stuff-burkina-link.lovable.app",
-      },
-      {
-        property: "og:image",
-        content:
-          "https://stuff-burkina-link.lovable.app/og-image.jpg",
-      },
       { name: "twitter:card", content: "summary_large_image" },
-      {
-        name: "twitter:image",
-        content:
-          "https://stuff-burkina-link.lovable.app/og-image.jpg",
-      },
     ],
   }),
   component: Accueil,
 });
 
+type Ad = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  price: number | null;
+  location: string | null;
+  whatsapp_phone: string | null;
+  created_at: string;
+  updated_at: string;
+  photo_urls: string[] | null;
+  business_id: string | null;
+  auction_enabled: boolean;
+  auction_start_price: number | null;
+  auction_end_at: string | null;
+  reference: string | null;
+  allow_negotiation: boolean;
+  status: string | null;
+};
+
+const categories = [
+  "Téléphones",
+  "Informatique",
+  "Électronique",
+  "Vêtements",
+  "Chaussures",
+  "Maison",
+  "Meubles",
+  "Véhicules",
+  "Immobilier",
+  "Services",
+  "Autres",
+];
+
 function Accueil() {
   const queryClient = useQueryClient();
 
   const [categorie, setCategorie] = useState("");
+  const [localisation, setLocalisation] = useState("");
   const [recherche, setRecherche] = useState("");
 
   const annonces = useQuery({
-    queryKey: ["annonces"],
-    queryFn: fetchAnnonces,
+    queryKey: ["ads"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ads")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      return (data ?? []) as Ad[];
+    },
   });
 
   useEffect(() => {
@@ -68,7 +99,7 @@ function Accueil() {
         },
         () => {
           queryClient.invalidateQueries({
-            queryKey: ["annonces"],
+            queryKey: ["ads"],
           });
         },
       )
@@ -79,37 +110,29 @@ function Accueil() {
     };
   }, [queryClient]);
 
-  const categories = useMemo(() => {
-    const values = new Set<string>();
+  const localisations = useMemo(() => {
+    const valeurs = (annonces.data ?? [])
+      .map((ad) => ad.location)
+      .filter((location): location is string => Boolean(location));
 
-    for (const annonce of annonces.data ?? []) {
-      if (annonce.category) {
-        values.add(annonce.category);
-      }
-    }
-
-    return Array.from(values).sort((a, b) =>
-      a.localeCompare(b, "fr"),
-    );
+    return [...new Set(valeurs)].sort();
   }, [annonces.data]);
 
   const liste = useMemo(() => {
     const q = recherche.trim().toLowerCase();
 
-    return (annonces.data ?? []).filter((a) => {
-      if (a.status === "inactive") {
+    return (annonces.data ?? []).filter((ad) => {
+      if (categorie && ad.category !== categorie) {
         return false;
       }
 
-      if (categorie && a.category !== categorie) {
+      if (localisation && ad.location !== localisation) {
         return false;
       }
 
       if (
         q &&
-        !`${a.title} ${a.description ?? ""} ${
-          a.category ?? ""
-        } ${a.location ?? ""}`
+        !`${ad.title} ${ad.description ?? ""}`
           .toLowerCase()
           .includes(q)
       ) {
@@ -118,7 +141,12 @@ function Accueil() {
 
       return true;
     });
-  }, [annonces.data, categorie, recherche]);
+  }, [
+    annonces.data,
+    categorie,
+    localisation,
+    recherche,
+  ]);
 
   return (
     <AppLayout>
@@ -130,19 +158,35 @@ function Accueil() {
           className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
         />
 
-        <select
-          value={categorie}
-          onChange={(e) => setCategorie(e.target.value)}
-          className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-        >
-          <option value="">Toutes les catégories</option>
+        <div className="grid grid-cols-2 gap-2">
+          <select
+            value={categorie}
+            onChange={(e) => setCategorie(e.target.value)}
+            className="rounded-xl border border-input bg-background px-2 py-2 text-xs"
+          >
+            <option value="">Toutes les catégories</option>
 
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={localisation}
+            onChange={(e) => setLocalisation(e.target.value)}
+            className="rounded-xl border border-input bg-background px-2 py-2 text-xs"
+          >
+            <option value="">Toutes les localisations</option>
+
+            {localisations.map((location) => (
+              <option key={location} value={location}>
+                {location}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {annonces.isLoading ? (
@@ -159,53 +203,41 @@ function Accueil() {
         </p>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-3">
-          {liste.map((a) => {
-            const imageUrl = a.photo_urls?.[0] ?? null;
+          {liste.map((ad) => {
+            const imageUrl = ad.photo_urls?.[0] ?? null;
 
             return (
               <Link
-                key={a.id}
+                key={ad.id}
                 to="/annonce/$id"
-                params={{ id: a.id }}
+                params={{ id: ad.id }}
                 className="overflow-hidden rounded-2xl border border-border bg-card"
               >
                 <div className="relative aspect-square bg-muted">
                   {imageUrl ? (
                     <img
                       src={imageUrl}
-                      alt={a.title}
+                      alt={ad.title}
                       loading="lazy"
                       className="h-full w-full object-cover"
                     />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                      Aucune image
-                    </div>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="p-2">
                   <p className="line-clamp-1 text-sm font-semibold text-foreground">
-                    {a.title}
+                    {ad.title}
                   </p>
 
-                  {a.price != null && (
+                  {ad.price != null ? (
                     <p className="text-sm font-bold text-primary">
-                      {formatPrix(Number(a.price))}
+                      {formatPrix(Number(ad.price))}
                     </p>
-                  )}
+                  ) : null}
 
-                  {a.location && (
-                    <p className="line-clamp-1 text-xs text-muted-foreground">
-                      {a.location}
-                    </p>
-                  )}
-
-                  {a.category && (
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      {a.category}
-                    </p>
-                  )}
+                  <p className="line-clamp-1 text-xs text-muted-foreground">
+                    {ad.location ?? "Localisation non renseignée"}
+                  </p>
                 </div>
               </Link>
             );
