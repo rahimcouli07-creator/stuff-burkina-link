@@ -1,288 +1,243 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { toast } from "sonner";
-import { AppLayout } from "@/components/AppLayout";
-import { PasswordGate } from "@/components/PasswordGate";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  fetchAnnonces,
-  fetchCategories,
-  fetchOffres,
-  fetchRegions,
-  fetchVilles,
-  formatPrix,
-  normalizePhone,
-  uploadImage,
-} from "@/lib/market";
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient'; // Ajuste le chemin si nécessaire
 
-export const Route = createFileRoute("/admin")({
-  head: () => ({
-    meta: [
-      { title: "Administration | Stuff Market" },
-      { name: "description", content: "Espace administrateur de Stuff Market." },
-      { property: "og:title", content: "Administration | Stuff Market" },
-      { property: "og:description", content: "Gestion des annonces, villes et catégories." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "robots", content: "noindex" },
-    ],
-  }),
-  component: AdminPage,
-});
+export default function Admin() {
+  const [session, setSession] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [adminProfile, setAdminProfile] = useState(null);
+  const [subAdmins, setSubAdmins] = useState([]);
 
-function AdminPage() {
-  return (
-    <AppLayout>
-      <PasswordGate>
-        <AdminPanel />
-      </PasswordGate>
-    </AppLayout>
-  );
-}
+  // Formulaire pour ajouter un sous-administrateur
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newCanManageAds, setNewCanManageAds] = useState(true);
+  const [newCanManageOffers, setNewCanManageOffers] = useState(true);
+  const [newCanManageUsers, setNewCanManageUsers] = useState(false);
 
-function AdminPanel() {
-  const queryClient = useQueryClient();
-  const annonces = useQuery({ queryKey: ["annonces"], queryFn: fetchAnnonces });
-  const regions = useQuery({ queryKey: ["regions"], queryFn: fetchRegions });
-  const villes = useQuery({ queryKey: ["villes"], queryFn: fetchVilles });
-  const categories = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) fetchAdminProfile(session.user.email);
+    });
 
-  const [nouvelleRegion, setNouvelleRegion] = useState("");
-  const [nouvelleVille, setNouvelleVille] = useState("");
-  const [villeRegion, setVilleRegion] = useState("");
-  const [nouvelleCategorie, setNouvelleCategorie] = useState("");
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchAdminProfile(session.user.email);
+    });
 
-  const offres = useQuery({ queryKey: ["offres"], queryFn: fetchOffres });
-  const [offreTitre, setOffreTitre] = useState("");
-  const [offreDescription, setOffreDescription] = useState("");
-  const [offrePrix, setOffrePrix] = useState("");
-  const [offreWhatsapp, setOffreWhatsapp] = useState("");
-  const [offreImage, setOffreImage] = useState<File | null>(null);
-  const [offreEnCours, setOffreEnCours] = useState(false);
+    return () => subscription.unsubscribe();
+  }, []);
 
-  async function ajouterOffre() {
-    if (!offreTitre.trim()) {
-      toast.error("Le titre est obligatoire");
-      return;
-    }
-    setOffreEnCours(true);
+  const fetchAdminProfile = async (userEmail) => {
     try {
-      let imageUrl: string | null = null;
-      if (offreImage) imageUrl = await uploadImage(offreImage);
-      const tel = normalizePhone(offreWhatsapp);
-      const { error } = await supabase.from("offres").insert({
-        titre: offreTitre.trim(),
-        description: offreDescription.trim() || null,
-        prix: offrePrix ? Number(offrePrix) : null,
-        whatsapp: tel ? (tel.startsWith("226") ? tel : `226${tel}`) : null,
-        image_url: imageUrl,
-      });
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', userEmail)
+        .single();
+
       if (error) throw error;
-      setOffreTitre("");
-      setOffreDescription("");
-      setOffrePrix("");
-      setOffreWhatsapp("");
-      setOffreImage(null);
-      queryClient.invalidateQueries({ queryKey: ["offres"] });
-      toast.success("Offre publiée");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
-    } finally {
-      setOffreEnCours(false);
+      setAdminProfile(data);
+
+      if (data && data.role === 'super_admin') {
+        fetchSubAdmins();
+      }
+    } catch (err) {
+      console.error("Erreur lors de la récupération du profil admin:", err.message);
+      setError("Accès restreint. Vous n'avez pas les droits d'administration.");
     }
-  }
+  };
 
-  const liste = annonces.data ?? [];
-  const boostees = liste.filter((a) => a.is_boosted).length;
-  const valeur = liste.reduce((sum, a) => sum + a.prix, 0);
+  const fetchSubAdmins = async () => {
+    const { data, error } = await supabase.from('admin_users').select('*');
+    if (!error && data) {
+      setSubAdmins(data);
+    }
+  };
 
-  async function run(promise: PromiseLike<{ error: { message: string } | null }>, keys: string[]) {
-    const { error } = await promise;
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     if (error) {
-      toast.error(error.message);
-      return;
+      setError("Identifiants incorrects. Veuillez réessayer.");
     }
-    keys.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
-    toast.success("Mise à jour effectuée");
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setAdminProfile(null);
+  };
+
+  const handleAddSubAdmin = async (e) => {
+    e.preventDefault();
+    if (!newAdminEmail) return;
+
+    const { error } = await supabase.from('admin_users').insert([
+      {
+        email: newAdminEmail,
+        role: 'sub_admin',
+        can_manage_ads: newCanManageAds,
+        can_manage_offers: newCanManageOffers,
+        can_manage_users: newCanManageUsers,
+      },
+    ]);
+
+    if (error) {
+      alert("Erreur lors de l'ajout : " + error.message);
+    } else {
+      alert("Sous-administrateur ajouté avec succès.");
+      setNewAdminEmail('');
+      fetchSubAdmins();
+    }
+  };
+
+  const handleDeleteSubAdmin = async (id) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer cet administrateur ?")) return;
+
+    const { error } = await supabase.from('admin_users').delete().eq('id', id);
+    if (error) {
+      alert("Erreur de suppression : " + error.message);
+    } else {
+      fetchSubAdmins();
+    }
+  };
+
+  // 1. Écran de connexion si non authentifié
+  if (!session) {
+    return (
+      <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+        <h2>Portail d'Administration</h2>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+        <form onSubmit={handleLogin}>
+          <div style={{ marginBottom: '15px' }}>
+            <label>Email Admin :</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            />
+          </div>
+          <div style={{ marginBottom: '15px' }}>
+            <label>Mot de passe :</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            />
+          </div>
+          <button type="submit" disabled={loading} style={{ padding: '10px 15px', cursor: 'pointer' }}>
+            {loading ? 'Connexion...' : 'Se connecter'}
+          </button>
+        </form>
+      </div>
+    );
   }
 
-  const inputClass = "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm";
+  // 2. Vérification des accès d'administration
+  if (!adminProfile) {
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h2>Accès Refusé</h2>
+        <p>Votre compte n'a pas les privilèges requis pour accéder au panneau d'administration.</p>
+        <button onClick={handleLogout}>Se déconnecter</button>
+      </div>
+    );
+  }
 
+  // 3. Tableau de bord Administrateur
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-extrabold text-foreground">Administration</h1>
-
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { label: "Annonces", valeur: String(liste.length) },
-          { label: "À la une", valeur: String(boostees) },
-          { label: "Valeur", valeur: formatPrix(valeur) },
-        ].map((s) => (
-          <div key={s.label} className="rounded-2xl border border-border bg-card p-3 text-center">
-            <p className="text-lg font-black text-primary">{s.valeur}</p>
-            <p className="text-[11px] text-muted-foreground">{s.label}</p>
-          </div>
-        ))}
+    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>Tableau de Bord Admin</h1>
+        <button onClick={handleLogout} style={{ padding: '8px 12px' }}>Déconnexion</button>
       </div>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-bold text-foreground">Annonces</h2>
-        {liste.map((a) => (
-          <div
-            key={a.id}
-            className="flex items-center gap-2 rounded-2xl border border-border bg-card p-3"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-1 text-sm font-semibold text-foreground">{a.titre}</p>
-              <p className="text-xs text-muted-foreground">
-                {a.ville} · {formatPrix(a.prix)}
-              </p>
-            </div>
-            <button
-              onClick={() =>
-                run(
-                  supabase.from("annonces").update({ is_boosted: !a.is_boosted }).eq("id", a.id),
-                  ["annonces"],
-                )
-              }
-              className={`rounded-xl px-3 py-2 text-xs font-bold ${
-                a.is_boosted
-                  ? "bg-brand-yellow text-brand-yellow-foreground"
-                  : "border border-border text-foreground"
-              }`}
-            >
-              Boost
-            </button>
-            <button
-              onClick={() => run(supabase.from("annonces").delete().eq("id", a.id), ["annonces"])}
-              className="rounded-xl border border-destructive px-3 py-2 text-xs font-bold text-destructive"
-            >
-              Suppr.
-            </button>
-          </div>
-        ))}
-      </section>
+      <p>Connecté en tant que : <strong>{adminProfile.email}</strong> ({adminProfile.role})</p>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-bold text-foreground">Régions</h2>
-        <div className="flex gap-2">
-          <input
-            value={nouvelleRegion}
-            onChange={(e) => setNouvelleRegion(e.target.value)}
-            placeholder="Nouvelle région"
-            className={inputClass}
-          />
-          <button
-            onClick={() => {
-              if (!nouvelleRegion.trim()) return;
-              run(supabase.from("regions").insert({ nom: nouvelleRegion.trim() }), ["regions"]);
-              setNouvelleRegion("");
-            }}
-            className="rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground"
-          >
-            Ajouter
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(regions.data ?? []).map((r) => (
-            <button
-              key={r.id}
-              onClick={() => run(supabase.from("regions").delete().eq("id", r.id), ["regions"])}
-              className="rounded-full border border-border px-3 py-1 text-xs text-foreground"
-            >
-              {r.nom} ✕
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* Section Gestion des Publicités */}
+      {adminProfile.can_manage_ads && (
+        <section style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '20px', borderRadius: '5px' }}>
+          <h3>Gestion des Publicités</h3>
+          <p>Fonctionnalités de gestion des publicités actives.</p>
+        </section>
+      )}
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-bold text-foreground">Villes</h2>
-        <div className="flex gap-2">
-          <input
-            value={nouvelleVille}
-            onChange={(e) => setNouvelleVille(e.target.value)}
-            placeholder="Nouvelle ville"
-            className={inputClass}
-          />
-          <select
-            value={villeRegion}
-            onChange={(e) => setVilleRegion(e.target.value)}
-            className={inputClass}
-          >
-            <option value="">Région</option>
-            {(regions.data ?? []).map((r) => (
-              <option key={r.id} value={r.nom}>
-                {r.nom}
-              </option>
+      {/* Section Gestion des Offres */}
+      {adminProfile.can_manage_offers && (
+        <section style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '20px', borderRadius: '5px' }}>
+          <h3>Gestion des Offres</h3>
+          <p>Fonctionnalités de gestion des offres d'emploi ou produits.</p>
+        </section>
+      )}
+
+      {/* Section Gestion des Utilisateurs / Sous-Admins (Réservé au Super Admin) */}
+      {adminProfile.role === 'super_admin' && (
+        <section style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '20px', borderRadius: '5px' }}>
+          <h3>Gestion des Sous-Administrateurs</h3>
+
+          <form onSubmit={handleAddSubAdmin} style={{ marginBottom: '20px' }}>
+            <h4>Ajouter un Sous-Admin</h4>
+            <input
+              type="email"
+              placeholder="Email du sous-admin"
+              value={newAdminEmail}
+              onChange={(e) => setNewAdminEmail(e.target.value)}
+              required
+              style={{ padding: '8px', width: '250px', marginRight: '10px' }}
+            />
+            <label style={{ marginRight: '10px' }}>
+              <input
+                type="checkbox"
+                checked={newCanManageAds}
+                onChange={(e) => setNewCanManageAds(e.target.checked)}
+              /> Pubs
+            </label>
+            <label style={{ marginRight: '10px' }}>
+              <input
+                type="checkbox"
+                checked={newCanManageOffers}
+                onChange={(e) => setNewCanManageOffers(e.target.checked)}
+              /> Offres
+            </label>
+            <label style={{ marginRight: '10px' }}>
+              <input
+                type="checkbox"
+                checked={newCanManageUsers}
+                onChange={(e) => setNewCanManageUsers(e.target.checked)}
+              /> Utilisateurs
+            </label>
+            <button type="submit" style={{ padding: '8px 12px' }}>Ajouter</button>
+          </form>
+
+          <h4>Liste des administrateurs</h4>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {subAdmins.map((sub) => (
+              <li key={sub.id} style={{ padding: '8px 0', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
+                <span>
+                  <strong>{sub.email}</strong> - {sub.role} (Pubs: {sub.can_manage_ads ? 'Oui' : 'Non'}, Offres: {sub.can_manage_offers ? 'Oui' : 'Non'}, Users: {sub.can_manage_users ? 'Oui' : 'Non'})
+                </span>
+                {sub.role !== 'super_admin' && (
+                  <button onClick={() => handleDeleteSubAdmin(sub.id)} style={{ color: 'red' }}>Supprimer</button>
+                )}
+              </li>
             ))}
-          </select>
-          <button
-            onClick={() => {
-              if (!nouvelleVille.trim() || !villeRegion) return;
-              run(
-                supabase
-                  .from("villes")
-                  .insert({ nom_ville: nouvelleVille.trim(), region: villeRegion }),
-                ["villes"],
-              );
-              setNouvelleVille("");
-            }}
-            className="rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground"
-          >
-            +
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(villes.data ?? []).map((v) => (
-            <button
-              key={v.id}
-              onClick={() => run(supabase.from("villes").delete().eq("id", v.id), ["villes"])}
-              className="rounded-full border border-border px-3 py-1 text-xs text-foreground"
-            >
-              {v.nom_ville} ✕
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-sm font-bold text-foreground">Catégories</h2>
-        <div className="flex gap-2">
-          <input
-            value={nouvelleCategorie}
-            onChange={(e) => setNouvelleCategorie(e.target.value)}
-            placeholder="Nouvelle catégorie"
-            className={inputClass}
-          />
-          <button
-            onClick={() => {
-              if (!nouvelleCategorie.trim()) return;
-              run(supabase.from("categories").insert({ nom: nouvelleCategorie.trim() }), [
-                "categories",
-              ]);
-              setNouvelleCategorie("");
-            }}
-            className="rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground"
-          >
-            Ajouter
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(categories.data ?? []).map((c) => (
-            <button
-              key={c.id}
-              onClick={() =>
-                run(supabase.from("categories").delete().eq("id", c.id), ["categories"])
-              }
-              className="rounded-full border border-border px-3 py-1 text-xs text-foreground"
-            >
-              {c.nom} ✕
-            </button>
-          ))}
-        </div>
-      </section>
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
