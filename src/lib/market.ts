@@ -5,17 +5,23 @@ export const PAYMENT_NUMBER = "64601944";
 
 export type Annonce = {
   id: string;
-  titre: string;
+  user_id: string;
+  title: string;
   description: string | null;
-  categorie: string | null;
-  etat: string | null;
-  prix: number;
-  region: string | null;
-  ville: string | null;
-  whatsapp: string;
-  image_url: string | null;
-  is_boosted: boolean;
+  category: string | null;
+  price: number | null;
+  location: string | null;
+  whatsapp_phone: string | null;
   created_at: string;
+  updated_at: string;
+  photo_urls: string[] | null;
+  business_id: string | null;
+  auction_enabled: boolean;
+  auction_start_price: number | null;
+  auction_end_at: string | null;
+  reference: string | null;
+  allow_negotiation: boolean;
+  status: string | null;
 };
 
 export type Service = {
@@ -34,6 +40,20 @@ export type Service = {
   status: string | null;
 };
 
+export type Business = {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  city: string | null;
+  address: string | null;
+  whatsapp_phone: string | null;
+  photo_urls: string[] | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export async function fetchServices() {
   const { data, error } = await supabase
     .from("services")
@@ -45,19 +65,10 @@ export async function fetchServices() {
   return (data ?? []) as Service[];
 }
 
-export function formatPrix(prix: number) {
-  return new Intl.NumberFormat("fr-FR").format(prix) + " FCFA";
-}
-
-export function normalizePhone(value: string) {
-  return value.replace(/\D/g, "");
-}
-
 export async function fetchAnnonces() {
   const { data, error } = await supabase
-    .from("annonces")
+    .from("ads")
     .select("*")
-    .order("is_boosted", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -67,7 +78,7 @@ export async function fetchAnnonces() {
 
 export async function fetchAnnonce(id: string) {
   const { data, error } = await supabase
-    .from("annonces")
+    .from("ads")
     .select("*")
     .eq("id", id)
     .maybeSingle();
@@ -77,41 +88,23 @@ export async function fetchAnnonce(id: string) {
   return data as Annonce | null;
 }
 
-export async function fetchRegions() {
+export async function fetchBusinesses() {
   const { data, error } = await supabase
-    .from("regions")
+    .from("businesses")
     .select("*")
-    .order("nom");
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
 
-  return (data ?? []) as { id: string; nom: string }[];
+  return (data ?? []) as Business[];
 }
 
-export async function fetchVilles() {
-  const { data, error } = await supabase
-    .from("villes")
-    .select("*")
-    .order("nom_ville");
-
-  if (error) throw error;
-
-  return (data ?? []) as {
-    id: string;
-    nom_ville: string;
-    region: string;
-  }[];
+export function formatPrix(prix: number) {
+  return new Intl.NumberFormat("fr-FR").format(prix) + " FCFA";
 }
 
-export async function fetchCategories() {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .order("nom");
-
-  if (error) throw error;
-
-  return (data ?? []) as { id: string; nom: string }[];
+export function normalizePhone(value: string) {
+  return value.replace(/\D/g, "");
 }
 
 export async function uploadImage(file: File) {
