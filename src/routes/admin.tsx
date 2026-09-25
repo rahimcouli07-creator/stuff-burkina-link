@@ -1,86 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient'; // Ajuste le chemin si nécessaire
+import { createFileRoute } from '@tanstack/react-router'
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../integrations/supabase/client'
 
-export default function Admin() {
-  const [session, setSession] = useState(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [adminProfile, setAdminProfile] = useState(null);
-  const [subAdmins, setSubAdmins] = useState([]);
+export const Route = createFileRoute('/admin')({
+  component: AdminPage,
+})
 
-  // Formulaire pour ajouter un sous-administrateur
-  const [newAdminEmail, setNewAdminEmail] = useState('');
-  const [newCanManageAds, setNewCanManageAds] = useState(true);
-  const [newCanManageOffers, setNewCanManageOffers] = useState(true);
-  const [newCanManageUsers, setNewCanManageUsers] = useState(false);
+function AdminPage() {
+  const [session, setSession] = useState<any>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [adminProfile, setAdminProfile] = useState<any>(null)
+  const [subAdmins, setSubAdmins] = useState<any[]>([])
+
+  const [newAdminEmail, setNewAdminEmail] = useState('')
+  const [newCanManageAds, setNewCanManageAds] = useState(true)
+  const [newCanManageOffers, setNewCanManageOffers] = useState(true)
+  const [newCanManageUsers, setNewCanManageUsers] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchAdminProfile(session.user.email);
-    });
+      setSession(session)
+      if (session?.user?.email) fetchAdminProfile(session.user.email)
+    })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchAdminProfile(session.user.email);
-    });
+      setSession(session)
+      if (session?.user?.email) fetchAdminProfile(session.user.email)
+    })
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => subscription.unsubscribe()
+  }, [])
 
-  const fetchAdminProfile = async (userEmail) => {
+  const fetchAdminProfile = async (userEmail: string) => {
     try {
       const { data, error } = await supabase
         .from('admin_users')
         .select('*')
         .eq('email', userEmail)
-        .single();
+        .maybeSingle()
 
-      if (error) throw error;
-      setAdminProfile(data);
+      if (error) throw error
+      setAdminProfile(data)
 
       if (data && data.role === 'super_admin') {
-        fetchSubAdmins();
+        fetchSubAdmins()
       }
-    } catch (err) {
-      console.error("Erreur lors de la récupération du profil admin:", err.message);
-      setError("Accès restreint. Vous n'avez pas les droits d'administration.");
+    } catch (err: any) {
+      console.error("Erreur profil admin:", err.message)
+      setError("Accès restreint. Vous n'avez pas les droits d'administration.")
     }
-  };
+  }
 
   const fetchSubAdmins = async () => {
-    const { data, error } = await supabase.from('admin_users').select('*');
+    const { data, error } = await supabase.from('admin_users').select('*')
     if (!error && data) {
-      setSubAdmins(data);
+      setSubAdmins(data)
     }
-  };
+  }
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
-    });
+    })
 
     if (error) {
-      setError("Identifiants incorrects. Veuillez réessayer.");
+      setError("Identifiants incorrects. Veuillez réessayer.")
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setAdminProfile(null);
-  };
+    await supabase.auth.signOut()
+    setAdminProfile(null)
+  }
 
-  const handleAddSubAdmin = async (e) => {
-    e.preventDefault();
-    if (!newAdminEmail) return;
+  const handleAddSubAdmin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newAdminEmail) return
 
     const { error } = await supabase.from('admin_users').insert([
       {
@@ -90,29 +94,28 @@ export default function Admin() {
         can_manage_offers: newCanManageOffers,
         can_manage_users: newCanManageUsers,
       },
-    ]);
+    ])
 
     if (error) {
-      alert("Erreur lors de l'ajout : " + error.message);
+      alert("Erreur lors de l'ajout : " + error.message)
     } else {
-      alert("Sous-administrateur ajouté avec succès.");
-      setNewAdminEmail('');
-      fetchSubAdmins();
+      alert("Sous-administrateur ajouté avec succès.")
+      setNewAdminEmail('')
+      fetchSubAdmins()
     }
-  };
+  }
 
-  const handleDeleteSubAdmin = async (id) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer cet administrateur ?")) return;
+  const handleDeleteSubAdmin = async (id: string) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer cet administrateur ?")) return
 
-    const { error } = await supabase.from('admin_users').delete().eq('id', id);
+    const { error } = await supabase.from('admin_users').delete().eq('id', id)
     if (error) {
-      alert("Erreur de suppression : " + error.message);
+      alert("Erreur de suppression : " + error.message)
     } else {
-      fetchSubAdmins();
+      fetchSubAdmins()
     }
-  };
+  }
 
-  // 1. Écran de connexion si non authentifié
   if (!session) {
     return (
       <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
@@ -139,26 +142,24 @@ export default function Admin() {
               style={{ width: '100%', padding: '8px', marginTop: '5px' }}
             />
           </div>
-          <button type="submit" disabled={loading} style={{ padding: '10px 15px', cursor: 'pointer' }}>
+          <button type="submit" disabled={loading} style={{ padding: '10px 15px', cursor: 'pointer', width: '100%' }}>
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
       </div>
-    );
+    )
   }
 
-  // 2. Vérification des accès d'administration
   if (!adminProfile) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
+      <div style={{ padding: '40px', textAlign: 'center' }}>
         <h2>Accès Refusé</h2>
-        <p>Votre compte n'a pas les privilèges requis pour accéder au panneau d'administration.</p>
-        <button onClick={handleLogout}>Se déconnecter</button>
+        <p style={{ color: 'red' }}>{error || "Votre compte n'a pas les privilèges d'administration requis."}</p>
+        <button onClick={handleLogout} style={{ marginTop: '10px', padding: '8px 16px' }}>Se déconnecter</button>
       </div>
-    );
+    )
   }
 
-  // 3. Tableau de bord Administrateur
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -168,23 +169,20 @@ export default function Admin() {
 
       <p>Connecté en tant que : <strong>{adminProfile.email}</strong> ({adminProfile.role})</p>
 
-      {/* Section Gestion des Publicités */}
       {adminProfile.can_manage_ads && (
         <section style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '20px', borderRadius: '5px' }}>
           <h3>Gestion des Publicités</h3>
-          <p>Fonctionnalités de gestion des publicités actives.</p>
+          <p>Module de gestion des publicités prêt.</p>
         </section>
       )}
 
-      {/* Section Gestion des Offres */}
       {adminProfile.can_manage_offers && (
         <section style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '20px', borderRadius: '5px' }}>
           <h3>Gestion des Offres</h3>
-          <p>Fonctionnalités de gestion des offres d'emploi ou produits.</p>
+          <p>Module de gestion des offres prêt.</p>
         </section>
       )}
 
-      {/* Section Gestion des Utilisateurs / Sous-Admins (Réservé au Super Admin) */}
       {adminProfile.role === 'super_admin' && (
         <section style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '20px', borderRadius: '5px' }}>
           <h3>Gestion des Sous-Administrateurs</h3>
@@ -197,36 +195,38 @@ export default function Admin() {
               value={newAdminEmail}
               onChange={(e) => setNewAdminEmail(e.target.value)}
               required
-              style={{ padding: '8px', width: '250px', marginRight: '10px' }}
+              style={{ padding: '8px', width: '220px', marginRight: '10px', marginBottom: '10px' }}
             />
-            <label style={{ marginRight: '10px' }}>
-              <input
-                type="checkbox"
-                checked={newCanManageAds}
-                onChange={(e) => setNewCanManageAds(e.target.checked)}
-              /> Pubs
-            </label>
-            <label style={{ marginRight: '10px' }}>
-              <input
-                type="checkbox"
-                checked={newCanManageOffers}
-                onChange={(e) => setNewCanManageOffers(e.target.checked)}
-              /> Offres
-            </label>
-            <label style={{ marginRight: '10px' }}>
-              <input
-                type="checkbox"
-                checked={newCanManageUsers}
-                onChange={(e) => setNewCanManageUsers(e.target.checked)}
-              /> Utilisateurs
-            </label>
+            <div style={{ marginBottom: '10px' }}>
+              <label style={{ marginRight: '10px' }}>
+                <input
+                  type="checkbox"
+                  checked={newCanManageAds}
+                  onChange={(e) => setNewCanManageAds(e.target.checked)}
+                /> Pubs
+              </label>
+              <label style={{ marginRight: '10px' }}>
+                <input
+                  type="checkbox"
+                  checked={newCanManageOffers}
+                  onChange={(e) => setNewCanManageOffers(e.target.checked)}
+                /> Offres
+              </label>
+              <label style={{ marginRight: '10px' }}>
+                <input
+                  type="checkbox"
+                  checked={newCanManageUsers}
+                  onChange={(e) => setNewCanManageUsers(e.target.checked)}
+                /> Utilisateurs
+              </label>
+            </div>
             <button type="submit" style={{ padding: '8px 12px' }}>Ajouter</button>
           </form>
 
           <h4>Liste des administrateurs</h4>
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {subAdmins.map((sub) => (
-              <li key={sub.id} style={{ padding: '8px 0', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
+              <li key={sub.id} style={{ padding: '8px 0', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>
                   <strong>{sub.email}</strong> - {sub.role} (Pubs: {sub.can_manage_ads ? 'Oui' : 'Non'}, Offres: {sub.can_manage_offers ? 'Oui' : 'Non'}, Users: {sub.can_manage_users ? 'Oui' : 'Non'})
                 </span>
@@ -239,5 +239,6 @@ export default function Admin() {
         </section>
       )}
     </div>
-  );
-}
+  )
+    }
+  
