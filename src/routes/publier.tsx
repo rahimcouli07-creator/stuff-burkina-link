@@ -1,18 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
+
 import { AppLayout } from "@/components/AppLayout";
 import { LoginRequired } from "@/components/LoginRequired";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  fetchCategories,
-  fetchRegions,
-  fetchVilles,
-  normalizePhone,
-  uploadImage,
-} from "@/lib/market";
+import { normalizePhone, uploadImage } from "@/lib/market";
 
 export const Route = createFileRoute("/publier")({
   head: () => ({
@@ -20,10 +14,17 @@ export const Route = createFileRoute("/publier")({
       { title: "Publier une annonce | Stuff Market" },
       {
         name: "description",
-        content: "Publiez gratuitement votre article d'occasion au Burkina Faso en 1 minute.",
+        content:
+          "Publiez gratuitement votre article au Burkina Faso.",
       },
-      { property: "og:title", content: "Publier une annonce | Stuff Market" },
-      { property: "og:description", content: "Vendez vos articles d'occasion au Burkina Faso." },
+      {
+        property: "og:title",
+        content: "Publier une annonce | Stuff Market",
+      },
+      {
+        property: "og:description",
+        content: "Vendez vos articles au Burkina Faso.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -34,64 +35,101 @@ export const Route = createFileRoute("/publier")({
 function Publier() {
   const navigate = useNavigate();
   const auth = useAuth();
-  const regions = useQuery({ queryKey: ["regions"], queryFn: fetchRegions });
-  const villes = useQuery({ queryKey: ["villes"], queryFn: fetchVilles });
-  const categories = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
   const [file, setFile] = useState<File | null>(null);
   const [titre, setTitre] = useState("");
   const [description, setDescription] = useState("");
   const [categorie, setCategorie] = useState("");
-  const [etat, setEtat] = useState("Occasion");
   const [prix, setPrix] = useState("");
-  const [region, setRegion] = useState("");
-  const [ville, setVille] = useState("");
+  const [location, setLocation] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [allowNegotiation, setAllowNegotiation] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const villesFiltrees = useMemo(
-    () => (villes.data ?? []).filter((v) => !region || v.region === region),
-    [villes.data, region],
-  );
+  const categories = [
+    "Téléphones",
+    "Informatique",
+    "Électronique",
+    "Vêtements",
+    "Chaussures",
+    "Maison",
+    "Meubles",
+    "Véhicules",
+    "Immobilier",
+    "Services",
+    "Autres",
+  ];
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!titre || !prix || !ville || !whatsapp) {
-      toast.error("Titre, prix, ville et WhatsApp sont obligatoires.");
+
+    if (!auth.user) {
+      toast.error("Vous devez être connecté.");
       return;
     }
+
+    if (!titre || !prix || !location || !whatsapp) {
+      toast.error(
+        "Titre, prix, localisation et WhatsApp sont obligatoires.",
+      );
+      return;
+    }
+
     setSaving(true);
+
     try {
       let imageUrl: string | null = null;
-      if (file) imageUrl = await uploadImage(file);
 
-      const { error } = await supabase.from("annonces").insert({
-        titre,
-        description,
-        categorie,
-        etat,
-        prix: Number(prix),
-        region,
-        ville,
-        whatsapp: "226" + normalizePhone(whatsapp).replace(/^226/, ""),
-        image_url: imageUrl,
+      if (file) {
+        imageUrl = await uploadImage(file);
+      }
+
+      const cleanPhone = normalizePhone(whatsapp);
+      const phone = "226" + cleanPhone.replace(/^226/, "");
+
+      const { error } = await supabase.from("ads").insert({
+        user_id: auth.user.id,
+        title: titre,
+        description: description || null,
+        category: categorie || null,
+        price: Number(prix),
+        location,
+        whatsapp_phone: phone,
+        photo_urls: imageUrl ? [imageUrl] : [],
+        business_id: null,
+        auction_enabled: false,
+        auction_start_price: null,
+        auction_end_at: null,
+        reference: null,
+        allow_negotiation: allowNegotiation,
+        status: "active",
       });
+
       if (error) throw error;
+
       toast.success("Annonce publiée !");
       navigate({ to: "/" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erreur lors de la publication");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Erreur lors de la publication.",
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  const inputClass = "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm";
+  const inputClass =
+    "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm";
 
   if (!auth.loading && !auth.user) {
     return (
       <AppLayout>
-        <h1 className="text-xl font-extrabold text-foreground">Publier une annonce</h1>
+        <h1 className="text-xl font-extrabold text-foreground">
+          Publier une annonce
+        </h1>
+
         <LoginRequired message="Connectez-vous pour publier une annonce." />
       </AppLayout>
     );
@@ -99,7 +137,14 @@ function Publier() {
 
   return (
     <AppLayout>
-      <h1 className="text-xl font-extrabold text-foreground">Publier une annonce</h1>
+      <h1 className="text-xl font-extrabold text-foreground">
+        Publier une annonce
+      </h1>
+
+      <p className="mt-1 text-sm text-muted-foreground">
+        Publiez votre article sur Stuff Market.
+      </p>
+
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
         <input
           type="file"
@@ -107,12 +152,14 @@ function Publier() {
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className={inputClass}
         />
+
         <input
           value={titre}
           onChange={(e) => setTitre(e.target.value)}
-          placeholder="Titre"
+          placeholder="Titre de l'annonce"
           className={inputClass}
         />
+
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -120,64 +167,69 @@ function Publier() {
           rows={4}
           className={inputClass}
         />
+
         <select
           value={categorie}
           onChange={(e) => setCategorie(e.target.value)}
           className={inputClass}
         >
           <option value="">Catégorie</option>
-          {(categories.data ?? []).map((c) => (
-            <option key={c.id} value={c.nom}>
-              {c.nom}
+
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
             </option>
           ))}
         </select>
-        <select value={etat} onChange={(e) => setEtat(e.target.value)} className={inputClass}>
-          <option value="Neuf">Neuf</option>
-          <option value="Occasion">Occasion</option>
-        </select>
+
         <input
           value={prix}
-          onChange={(e) => setPrix(e.target.value.replace(/\D/g, ""))}
+          onChange={(e) =>
+            setPrix(e.target.value.replace(/\D/g, ""))
+          }
           inputMode="numeric"
           placeholder="Prix en FCFA"
           className={inputClass}
         />
-        <select
-          value={region}
-          onChange={(e) => {
-            setRegion(e.target.value);
-            setVille("");
-          }}
+
+        <input
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Ville / localisation"
           className={inputClass}
-        >
-          <option value="">Région</option>
-          {(regions.data ?? []).map((r) => (
-            <option key={r.id} value={r.nom}>
-              {r.nom}
-            </option>
-          ))}
-        </select>
-        <select value={ville} onChange={(e) => setVille(e.target.value)} className={inputClass}>
-          <option value="">Ville</option>
-          {villesFiltrees.map((v) => (
-            <option key={v.id} value={v.nom_ville}>
-              {v.nom_ville}
-            </option>
-          ))}
-        </select>
+        />
+
         <div className="flex items-center gap-2">
           <span className="rounded-xl border border-input bg-muted px-3 py-2 text-sm font-semibold">
             +226
           </span>
+
           <input
             value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ""))}
+            onChange={(e) =>
+              setWhatsapp(e.target.value.replace(/\D/g, ""))
+            }
             inputMode="numeric"
             placeholder="70000000"
             className={inputClass}
           />
         </div>
+
+        <label className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+          <input
+            type="checkbox"
+            checked={allowNegotiation}
+            onChange={(e) =>
+              setAllowNegotiation(e.target.checked)
+            }
+            className="h-4 w-4"
+          />
+
+          <span className="text-sm font-medium">
+            Prix négociable
+          </span>
+        </label>
+
         <button
           type="submit"
           disabled={saving}
