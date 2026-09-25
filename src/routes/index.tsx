@@ -1,15 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  fetchAnnonces,
-  fetchCategories,
-  fetchRegions,
-  fetchVilles,
-  formatPrix,
-} from "@/lib/market";
+import { fetchAnnonces, formatPrix } from "@/lib/market";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,18 +13,33 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Achetez et vendez d'occasion au Burkina Faso : livres, tenues, chaussures, téléphones. Contact direct par WhatsApp.",
+          "Achetez et vendez au Burkina Faso. Trouvez des articles près de chez vous et contactez directement les vendeurs.",
       },
-      { property: "og:title", content: "Stuff Market - Achète & Vends vite" },
+      {
+        property: "og:title",
+        content: "Stuff Market - Achète & Vends vite",
+      },
       {
         property: "og:description",
-        content: "Trouvez des bonnes affaires près de chez vous, ville par ville.",
+        content:
+          "Trouvez des bonnes affaires près de chez vous au Burkina Faso.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://stuff-burkina-link.lovable.app" },
-      { property: "og:image", content: "https://stuff-burkina-link.lovable.app/og-image.jpg" },
+      {
+        property: "og:url",
+        content: "https://stuff-burkina-link.lovable.app",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://stuff-burkina-link.lovable.app/og-image.jpg",
+      },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "https://stuff-burkina-link.lovable.app/og-image.jpg" },
+      {
+        name: "twitter:image",
+        content:
+          "https://stuff-burkina-link.lovable.app/og-image.jpg",
+      },
     ],
   }),
   component: Accueil,
@@ -37,43 +47,78 @@ export const Route = createFileRoute("/")({
 
 function Accueil() {
   const queryClient = useQueryClient();
-  const [region, setRegion] = useState("Centre-Est");
-  const [ville, setVille] = useState("Tenkodogo");
+
   const [categorie, setCategorie] = useState("");
   const [recherche, setRecherche] = useState("");
 
-  const annonces = useQuery({ queryKey: ["annonces"], queryFn: fetchAnnonces });
-  const regions = useQuery({ queryKey: ["regions"], queryFn: fetchRegions });
-  const villes = useQuery({ queryKey: ["villes"], queryFn: fetchVilles });
-  const categories = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+  const annonces = useQuery({
+    queryKey: ["annonces"],
+    queryFn: fetchAnnonces,
+  });
 
   useEffect(() => {
     const channel = supabase
-      .channel("annonces-accueil")
-      .on("postgres_changes", { event: "*", schema: "public", table: "annonces" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["annonces"] });
-      })
+      .channel("ads-accueil")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "ads",
+        },
+        () => {
+          queryClient.invalidateQueries({
+            queryKey: ["annonces"],
+          });
+        },
+      )
       .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
 
-  const villesFiltrees = useMemo(
-    () => (villes.data ?? []).filter((v) => !region || v.region === region),
-    [villes.data, region],
-  );
+  const categories = useMemo(() => {
+    const values = new Set<string>();
+
+    for (const annonce of annonces.data ?? []) {
+      if (annonce.category) {
+        values.add(annonce.category);
+      }
+    }
+
+    return Array.from(values).sort((a, b) =>
+      a.localeCompare(b, "fr"),
+    );
+  }, [annonces.data]);
 
   const liste = useMemo(() => {
     const q = recherche.trim().toLowerCase();
+
     return (annonces.data ?? []).filter((a) => {
-      if (ville && a.ville !== ville) return false;
-      if (!ville && region && a.region !== region) return false;
-      if (categorie && a.categorie !== categorie) return false;
-      if (q && !`${a.titre} ${a.description ?? ""}`.toLowerCase().includes(q)) return false;
+      if (a.status === "inactive") {
+        return false;
+      }
+
+      if (categorie && a.category !== categorie) {
+        return false;
+      }
+
+      if (
+        q &&
+        !`${a.title} ${a.description ?? ""} ${
+          a.category ?? ""
+        } ${a.location ?? ""}`
+          .toLowerCase()
+          .includes(q)
+      ) {
+        return false;
+      }
+
       return true;
     });
-  }, [annonces.data, ville, region, categorie, recherche]);
+  }, [annonces.data, categorie, recherche]);
 
   return (
     <AppLayout>
@@ -84,86 +129,87 @@ function Accueil() {
           placeholder="Rechercher un article..."
           className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
         />
-        <div className="grid grid-cols-3 gap-2">
-          <select
-            value={region}
-            onChange={(e) => {
-              setRegion(e.target.value);
-              setVille("");
-            }}
-            className="rounded-xl border border-input bg-background px-2 py-2 text-xs"
-          >
-            <option value="">Région</option>
-            {(regions.data ?? []).map((r) => (
-              <option key={r.id} value={r.nom}>
-                {r.nom}
-              </option>
-            ))}
-          </select>
-          <select
-            value={ville}
-            onChange={(e) => setVille(e.target.value)}
-            className="rounded-xl border border-input bg-background px-2 py-2 text-xs"
-          >
-            <option value="">Ville</option>
-            {villesFiltrees.map((v) => (
-              <option key={v.id} value={v.nom_ville}>
-                {v.nom_ville}
-              </option>
-            ))}
-          </select>
-          <select
-            value={categorie}
-            onChange={(e) => setCategorie(e.target.value)}
-            className="rounded-xl border border-input bg-background px-2 py-2 text-xs"
-          >
-            <option value="">Catégorie</option>
-            {(categories.data ?? []).map((c) => (
-              <option key={c.id} value={c.nom}>
-                {c.nom}
-              </option>
-            ))}
-          </select>
-        </div>
+
+        <select
+          value={categorie}
+          onChange={(e) => setCategorie(e.target.value)}
+          className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+        >
+          <option value="">Toutes les catégories</option>
+
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
       </div>
 
       {annonces.isLoading ? (
-        <p className="mt-6 text-center text-sm text-muted-foreground">Chargement...</p>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Chargement...
+        </p>
+      ) : annonces.isError ? (
+        <p className="mt-6 rounded-2xl border border-destructive/20 bg-card p-4 text-center text-sm text-destructive">
+          Impossible de charger les annonces pour le moment.
+        </p>
       ) : liste.length === 0 ? (
         <p className="mt-10 text-center text-sm text-muted-foreground">
           Aucune annonce pour ces filtres.
         </p>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-3">
-          {liste.map((a) => (
-            <Link
-              key={a.id}
-              to="/annonce/$id"
-              params={{ id: a.id }}
-              className="overflow-hidden rounded-2xl border border-border bg-card"
-            >
-              <div className="relative aspect-square bg-muted">
-                {a.image_url ? (
-                  <img
-                    src={a.image_url}
-                    alt={a.titre}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                ) : null}
-                {a.is_boosted ? (
-                  <span className="absolute left-2 top-2 rounded-full bg-brand-yellow px-2 py-0.5 text-[10px] font-extrabold text-brand-yellow-foreground">
-                    À LA UNE
-                  </span>
-                ) : null}
-              </div>
-              <div className="p-2">
-                <p className="line-clamp-1 text-sm font-semibold text-foreground">{a.titre}</p>
-                <p className="text-sm font-bold text-primary">{formatPrix(a.prix)}</p>
-                <p className="text-xs text-muted-foreground">{a.ville}</p>
-              </div>
-            </Link>
-          ))}
+          {liste.map((a) => {
+            const imageUrl = a.photo_urls?.[0] ?? null;
+
+            return (
+              <Link
+                key={a.id}
+                to="/annonce/$id"
+                params={{ id: a.id }}
+                className="overflow-hidden rounded-2xl border border-border bg-card"
+              >
+                <div className="relative aspect-square bg-muted">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={a.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                      Aucune image
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-2">
+                  <p className="line-clamp-1 text-sm font-semibold text-foreground">
+                    {a.title}
+                  </p>
+
+                  {a.price != null && (
+                    <p className="text-sm font-bold text-primary">
+                      {formatPrix(Number(a.price))}
+                    </p>
+                  )}
+
+                  {a.location && (
+                    <p className="line-clamp-1 text-xs text-muted-foreground">
+                      {a.location}
+                    </p>
+                  )}
+
+                  {a.category && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {a.category}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </AppLayout>
