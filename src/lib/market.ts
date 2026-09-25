@@ -18,24 +18,31 @@ export type Annonce = {
   created_at: string;
 };
 
-export type Offre = {
+export type Service = {
   id: string;
-  titre: string;
+  user_id: string;
+  title: string;
   description: string | null;
-  image_url: string | null;
-  prix: number | null;
-  whatsapp: string | null;
-  is_active: boolean;
+  category: string | null;
+  price: number | null;
+  whatsapp_phone: string | null;
   created_at: string;
+  updated_at: string;
+  reference: string | null;
+  allow_negotiation: boolean;
+  location: string | null;
+  status: string | null;
 };
 
-export async function fetchOffres() {
+export async function fetchServices() {
   const { data, error } = await supabase
-    .from("offres")
+    .from("services")
     .select("*")
     .order("created_at", { ascending: false });
+
   if (error) throw error;
-  return (data ?? []) as Offre[];
+
+  return (data ?? []) as Service[];
 }
 
 export function formatPrix(prix: number) {
@@ -52,45 +59,79 @@ export async function fetchAnnonces() {
     .select("*")
     .order("is_boosted", { ascending: false })
     .order("created_at", { ascending: false });
+
   if (error) throw error;
+
   return (data ?? []) as Annonce[];
 }
 
 export async function fetchAnnonce(id: string) {
-  const { data, error } = await supabase.from("annonces").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("annonces")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
   if (error) throw error;
+
   return data as Annonce | null;
 }
 
 export async function fetchRegions() {
-  const { data, error } = await supabase.from("regions").select("*").order("nom");
+  const { data, error } = await supabase
+    .from("regions")
+    .select("*")
+    .order("nom");
+
   if (error) throw error;
+
   return (data ?? []) as { id: string; nom: string }[];
 }
 
 export async function fetchVilles() {
-  const { data, error } = await supabase.from("villes").select("*").order("nom_ville");
+  const { data, error } = await supabase
+    .from("villes")
+    .select("*")
+    .order("nom_ville");
+
   if (error) throw error;
-  return (data ?? []) as { id: string; nom_ville: string; region: string }[];
+
+  return (data ?? []) as {
+    id: string;
+    nom_ville: string;
+    region: string;
+  }[];
 }
 
 export async function fetchCategories() {
-  const { data, error } = await supabase.from("categories").select("*").order("nom");
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .order("nom");
+
   if (error) throw error;
+
   return (data ?? []) as { id: string; nom: string }[];
 }
 
 export async function uploadImage(file: File) {
   const ext = file.name.split(".").pop() || "jpg";
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from("images").upload(path, file, {
-    cacheControl: "3600",
-    upsert: false,
-  });
+
+  const { error } = await supabase.storage
+    .from("images")
+    .upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+
   if (error) throw error;
+
   const { data, error: signError } = await supabase.storage
     .from("images")
     .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+
   if (signError) throw signError;
+
   return data.signedUrl;
 }
