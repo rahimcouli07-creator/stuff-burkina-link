@@ -42,7 +42,10 @@ function OffresPage() {
 
         <div className="space-y-3">
           {liste.map((o) => (
-            <article key={o.id} className="overflow-hidden rounded-2xl border border-border bg-card">
+            <article
+              key={o.id}
+              className="overflow-hidden rounded-2xl border border-border bg-card"
+            >
               {o.image_url && (
                 <img src={o.image_url} alt={o.titre} className="h-44 w-full object-cover" />
               )}
