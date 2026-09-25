@@ -40,25 +40,6 @@ export type Service = {
   status: string | null;
 };
 
-export async function fetchServices() {
-  const { data, error } = await supabase
-    .from("services")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-
-  return (data ?? []) as Service[];
-}
-
-export function formatPrix(prix: number) {
-  return new Intl.NumberFormat("fr-FR").format(prix) + " FCFA";
-}
-
-export function normalizePhone(value: string) {
-  return value.replace(/\D/g, "");
-}
-
 export async function fetchAnnonces() {
   const { data, error } = await supabase
     .from("ads")
@@ -80,6 +61,25 @@ export async function fetchAnnonce(id: string) {
   if (error) throw error;
 
   return data as Annonce | null;
+}
+
+export async function fetchServices() {
+  const { data, error } = await supabase
+    .from("services")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []) as Service[];
+}
+
+export function formatPrix(prix: number) {
+  return new Intl.NumberFormat("fr-FR").format(prix) + " FCFA";
+}
+
+export function normalizePhone(value: string) {
+  return value.replace(/\D/g, "");
 }
 
 export async function uploadImage(file: File) {
