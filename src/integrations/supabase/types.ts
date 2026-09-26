@@ -212,35 +212,44 @@ export type Database = {
       profiles: {
         Row: {
           id: string;
-          email: string;
+          email: string | null;
           whatsapp_phone: string | null;
           whatsapp_verified: boolean;
           created_at: string;
           first_name: string | null;
           last_name: string | null;
           city: string | null;
+          locality: string | null;
+          region_id: string | null;
+          province_id: string | null;
           stuff_id: string | null;
         };
         Insert: {
           id: string;
-          email: string;
-          whatsapp_phone?: string | null;
+          email?: string | null;
+          whatsapp_phone: string;
           whatsapp_verified?: boolean;
           created_at?: string;
           first_name?: string | null;
           last_name?: string | null;
           city?: string | null;
+          locality?: string | null;
+          region_id?: string | null;
+          province_id?: string | null;
           stuff_id?: string | null;
         };
         Update: {
           id?: string;
-          email?: string;
-          whatsapp_phone?: string | null;
+          email?: string | null;
+          whatsapp_phone?: string;
           whatsapp_verified?: boolean;
           created_at?: string;
           first_name?: string | null;
           last_name?: string | null;
           city?: string | null;
+          locality?: string | null;
+          region_id?: string | null;
+          province_id?: string | null;
           stuff_id?: string | null;
         };
         Relationships: [];
@@ -335,7 +344,12 @@ export type Database = {
     };
 
     Functions: {
-      [_ in never]: never;
+      get_email_by_stuff_id: {
+        Args: {
+          p_stuff_id: string;
+        };
+        Returns: string | null;
+      };
     };
 
     Enums: {
@@ -381,7 +395,7 @@ export type TablesInsert<
 > = PublicTableNameOrOptions extends {
   schema: keyof Database;
 }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database["public"]["Tables"][TableName] extends {
       Insert: infer I;
     }
     ? I
@@ -402,7 +416,7 @@ export type TablesUpdate<
 > = PublicTableNameOrOptions extends {
   schema: keyof Database;
 }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database["public"]["Tables"][TableName] extends {
       Update: infer U;
     }
     ? U
@@ -418,12 +432,12 @@ export type Enums<
   EnumName extends PublicEnumNameOrOptions extends {
     schema: keyof Database;
   }
-    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof Database["public"]["Enums"]
     : never = never,
 > = PublicEnumNameOrOptions extends {
   schema: keyof Database;
 }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  ? Database["public"]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
     ? Database["public"]["Enums"][PublicEnumNameOrOptions]
     : never;
