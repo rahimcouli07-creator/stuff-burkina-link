@@ -25,6 +25,24 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+function generateStuffId(firstName: string, lastName: string) {
+  const first =
+    (lastName.trim().charAt(0) || "X").toUpperCase();
+
+  const second =
+    (firstName.trim().charAt(0) || "X").toUpperCase();
+
+  const numbers = Math.floor(Math.random() * 1000000)
+    .toString()
+    .padStart(6, "0");
+
+  return `${first}${second}${numbers}`;
+}
+
+function createInternalAuthEmail(stuffId: string) {
+  return `${stuffId.toLowerCase()}@accounts.stuffmarket.local`;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
 
@@ -45,12 +63,19 @@ function AuthPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (busy) return;
+
     setBusy(true);
 
     try {
       if (mode === "signup") {
-        if (!firstName.trim() || !lastName.trim()) {
-          throw new Error("Le prénom et le nom sont obligatoires.");
+        if (!firstName.trim()) {
+          throw new Error("Le prénom est obligatoire.");
+        }
+
+        if (!lastName.trim()) {
+          throw new Error("Le nom est obligatoire.");
         }
 
         if (!city.trim()) {
@@ -73,14 +98,32 @@ function AuthPage() {
           );
         }
 
-        if (!email.trim()) {
-          throw new Error(
-            "Pour le moment, un email est nécessaire pour créer le compte."
-          );
+        if (
+          email.trim() &&
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+        ) {
+          throw new Error("L'adresse email n'est pas valide.");
         }
 
+        const stuffId = generateStuffId(firstName, lastName);
+
+        /*
+         * Supabase Auth exige encore une adresse email technique
+         * pour les comptes sans email réel.
+         *
+         * Si l'utilisateur fournit un email :
+         * - il devient son email de contact dans profiles.
+         *
+         * Sinon :
+         * - une adresse technique interne est utilisée uniquement
+         *   pour Supabase Auth.
+         */
+        const authEmail = email.trim()
+          ? email.trim()
+          : createInternalAuthEmail(stuffId);
+
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: authEmail,
           password,
           options: {
             data: {
@@ -89,32 +132,40 @@ function AuthPage() {
               city: city.trim(),
               locality: locality.trim() || null,
               whatsapp_phone: whatsapp.trim(),
+              stuff_id: stuffId,
+              contact_email: email.trim() || null,
             },
-            emailRedirectTo: window.location.origin,
           },
         });
 
         if (error) throw error;
 
-        /*
-         * Si la confirmation email est désactivée,
-         * Supabase crée directement la session.
-         */
-        if (data.user) {
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("stuff_id")
-            .eq("id", data.user.id)
-            .maybeSingle();
-
-          if (!profileError && profile?.stuff_id) {
-            setCreatedStuffId(profile.stuff_id);
-          }
+        if (!data.user) {
+          throw new Error("Impossible de créer le compte.");
         }
 
-        toast.success(
-          "Compte créé. Votre identifiant Stuff Market a été généré."
-        );
+        /*
+         * Récupération de l'identifiant réellement enregistré
+         * dans profiles.
+         */
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("stuff_id")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        const finalStuffId = profile?.stuff_id || stuffId;
+
+        setCreatedStuffId(finalStuffId);
+
+        setIdentifier(finalStuffId);
+        setPassword("");
+
+        toast.success("Compte créé avec succès.");
 
         return;
       }
@@ -122,14 +173,20 @@ function AuthPage() {
       const value = identifier.trim();
 
       if (!value) {
-        throw new Error("Entrez votre email ou votre identifiant Stuff Market.");
+        throw new Error(
+          "Entrez votre identifiant Stuff Market ou votre email."
+        );
       }
 
-      let loginEmail = value;
+      if (!password) {
+        throw new Error("Entrez votre mot de passe.");
+      }
+
+      let authEmail = value;
 
       /*
-       * Si l'utilisateur saisit un Stuff ID,
-       * on retrouve l'email correspondant grâce à notre fonction SQL.
+       * Si ce n'est pas un email, on considère que c'est
+       * un identifiant Stuff Market.
        */
       if (!value.includes("@")) {
         const { data, error } = await supabase.rpc(
@@ -145,20 +202,35 @@ function AuthPage() {
           throw new Error("Identifiant Stuff Market introuvable.");
         }
 
-        loginEmail = data;
+        authEmail = data;
       }
 
       const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
+        email: authEmail,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (
+          error.message.toLowerCase().includes("email not confirmed")
+        ) {
+          throw new Error(
+            "Ce compte demande encore une confirmation email."
+          );
+        }
 
-      toast.success("Connexion réussie !");
+        throw error;
+      }
+
+      toast.success("Connexion réussie.");
+
       navigate({ to: "/" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Une erreur est survenue.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Une erreur est survenue."
+      );
     } finally {
       setBusy(false);
     }
@@ -185,8 +257,8 @@ function AuthPage() {
             </p>
 
             <p className="mt-4 text-sm text-muted-foreground">
-              Conservez bien cet identifiant. Vous pourrez l'utiliser pour
-              vous connecter à Stuff Market.
+              Conservez bien cet identifiant. Il vous permettra de vous
+              connecter à Stuff Market.
             </p>
 
             <button
@@ -210,12 +282,14 @@ function AuthPage() {
     <AppLayout>
       <div className="mx-auto max-w-md">
         <h1 className="text-xl font-extrabold text-foreground">
-          {mode === "login" ? "Connexion" : "Créer un compte"}
+          {mode === "login"
+            ? "Connexion"
+            : "Créer un compte"}
         </h1>
 
         <p className="mt-1 text-sm text-muted-foreground">
           {mode === "login"
-            ? "Connectez-vous avec votre email ou votre identifiant Stuff Market."
+            ? "Utilisez votre identifiant Stuff Market ou votre email."
             : "Créez votre compte Stuff Market."}
         </p>
 
@@ -268,10 +342,9 @@ function AuthPage() {
 
               <input
                 type="email"
-                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
+                placeholder="Email (facultatif)"
                 className={inputClass}
               />
 
@@ -292,7 +365,7 @@ function AuthPage() {
                 required
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Email ou identifiant Stuff Market"
+                placeholder="Identifiant Stuff Market ou email"
                 className={inputClass}
               />
 
@@ -323,7 +396,9 @@ function AuthPage() {
         <button
           type="button"
           onClick={() => {
-            setMode(mode === "login" ? "signup" : "login");
+            setMode(
+              mode === "login" ? "signup" : "login"
+            );
             setPassword("");
           }}
           className="mt-4 w-full text-sm font-semibold text-primary"
