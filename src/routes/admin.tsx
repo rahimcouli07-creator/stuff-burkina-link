@@ -15,6 +15,11 @@ type AdminProfile = {
   can_manage_users: boolean;
 };
 
+type VisitStat = {
+  visit_date: string;
+  visiteurs_uniques: number;
+};
+
 function AdminPage() {
   const [session, setSession] = useState<any>(null);
   const [email, setEmail] = useState("");
@@ -28,6 +33,9 @@ function AdminPage() {
   const [newCanManageAds, setNewCanManageAds] = useState(true);
   const [newCanManageOffers, setNewCanManageOffers] = useState(true);
   const [newCanManageUsers, setNewCanManageUsers] = useState(false);
+
+  const [visitStats, setVisitStats] = useState<VisitStat[]>([]);
+  const [visitsLoading, setVisitsLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -82,6 +90,41 @@ function AdminPage() {
     if (data.role === "super_admin") {
       fetchSubAdmins();
     }
+
+    fetchVisitStats();
+  };
+
+  const fetchVisitStats = async () => {
+    setVisitsLoading(true);
+
+    const { data, error } = await supabase
+      .from("app_visits")
+      .select("visit_date");
+
+    if (error) {
+      console.error("Erreur statistiques visiteurs:", error.message);
+      setVisitsLoading(false);
+      return;
+    }
+
+    const grouped = new Map<string, number>();
+
+    (data || []).forEach((visit) => {
+      grouped.set(
+        visit.visit_date,
+        (grouped.get(visit.visit_date) || 0) + 1,
+      );
+    });
+
+    const stats: VisitStat[] = Array.from(grouped.entries())
+      .map(([visit_date, visiteurs_uniques]) => ({
+        visit_date,
+        visiteurs_uniques,
+      }))
+      .sort((a, b) => b.visit_date.localeCompare(a.visit_date));
+
+    setVisitStats(stats);
+    setVisitsLoading(false);
   };
 
   const fetchSubAdmins = async () => {
@@ -120,6 +163,7 @@ function AdminPage() {
     setSession(null);
     setAdminProfile(null);
     setSubAdmins([]);
+    setVisitStats([]);
   };
 
   const handleAddSubAdmin = async (e: React.FormEvent) => {
@@ -293,6 +337,104 @@ function AdminPage() {
         Connecté en tant que : <strong>{adminProfile.email}</strong>{" "}
         ({adminProfile.role})
       </p>
+
+      {/* STATISTIQUES DES VISITEURS */}
+      <section
+        style={{
+          border: "1px solid #ddd",
+          padding: "15px",
+          marginBottom: "20px",
+          borderRadius: "8px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <h3>Visiteurs de l'application</h3>
+
+          <button
+            onClick={fetchVisitStats}
+            disabled={visitsLoading}
+            style={{
+              padding: "7px 12px",
+              cursor: visitsLoading ? "not-allowed" : "pointer",
+            }}
+          >
+            {visitsLoading ? "Actualisation..." : "Actualiser"}
+          </button>
+        </div>
+
+        {visitStats.length === 0 ? (
+          <p>Aucune visite enregistrée pour le moment.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginTop: "10px",
+              }}
+            >
+              <thead>
+                <tr>
+                  <th
+                    style={{
+                      textAlign: "left",
+                      padding: "10px",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Jour
+                  </th>
+
+                  <th
+                    style={{
+                      textAlign: "right",
+                      padding: "10px",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Visiteurs
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {visitStats.map((stat) => (
+                  <tr key={stat.visit_date}>
+                    <td
+                      style={{
+                        padding: "10px",
+                        borderBottom: "1px solid #eee",
+                      }}
+                    >
+                      {new Date(
+                        `${stat.visit_date}T00:00:00`,
+                      ).toLocaleDateString("fr-FR")}
+                    </td>
+
+                    <td
+                      style={{
+                        padding: "10px",
+                        borderBottom: "1px solid #eee",
+                        textAlign: "right",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {stat.visiteurs_uniques}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {adminProfile.can_manage_ads && (
         <section
