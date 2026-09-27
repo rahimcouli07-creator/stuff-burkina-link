@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,235 +9,287 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizePhone, uploadImage } from "@/lib/market";
 
 export const Route = createFileRoute("/publier")({
-  head: () => ({
-    meta: [
-      { title: "Publier une annonce | Stuff Market" },
-      {
-        name: "description",
-        content:
-          "Publiez gratuitement votre article au Burkina Faso.",
-      },
-      {
-        property: "og:title",
-        content: "Publier une annonce | Stuff Market",
-      },
-      {
-        property: "og:description",
-        content: "Vendez vos articles au Burkina Faso.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: Publier,
+  component: PublierPage,
 });
 
-function Publier() {
-  const navigate = useNavigate();
-  const auth = useAuth();
+function PublierPage() {
+  const { user, loading } = useAuth();
 
-  const [file, setFile] = useState<File | null>(null);
-  const [titre, setTitre] = useState("");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [categorie, setCategorie] = useState("");
-  const [prix, setPrix] = useState("");
+  const [category, setCategory] = useState("");
+  const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [allowNegotiation, setAllowNegotiation] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [allowNegotiation, setAllowNegotiation] = useState(true);
+  const [tradeEnabled, setTradeEnabled] = useState(false);
 
-  const categories = [
-    "Téléphones",
-    "Informatique",
-    "Électronique",
-    "Vêtements",
-    "Chaussures",
-    "Maison",
-    "Meubles",
-    "Véhicules",
-    "Immobilier",
-    "Services",
-    "Autres",
-  ];
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [publishing, setPublishing] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!auth.user) {
-      toast.error("Vous devez être connecté.");
-      return;
-    }
-
-    if (!titre || !prix || !location || !whatsapp) {
-      toast.error(
-        "Titre, prix, localisation et WhatsApp sont obligatoires.",
-      );
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      let imageUrl: string | null = null;
-
-      if (file) {
-        imageUrl = await uploadImage(file);
-      }
-
-      const cleanPhone = normalizePhone(whatsapp);
-      const phone = "226" + cleanPhone.replace(/^226/, "");
-
-      const { error } = await supabase.from("ads").insert({
-        user_id: auth.user.id,
-        title: titre,
-        description: description || null,
-        category: categorie || null,
-        price: Number(prix),
-        location,
-        whatsapp_phone: phone,
-        photo_urls: imageUrl ? [imageUrl] : [],
-        business_id: null,
-        auction_enabled: false,
-        auction_start_price: null,
-        auction_end_at: null,
-        reference: null,
-        allow_negotiation: allowNegotiation,
-        status: "active",
-      });
-
-      if (error) throw error;
-
-      toast.success("Annonce publiée !");
-      navigate({ to: "/" });
-    } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Erreur lors de la publication.",
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const inputClass =
-    "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm";
-
-  if (!auth.loading && !auth.user) {
+  if (loading) {
     return (
       <AppLayout>
-        <h1 className="text-xl font-extrabold text-foreground">
-          Publier une annonce
-        </h1>
-
-        <LoginRequired message="Connectez-vous pour publier une annonce." />
+        <div className="p-6 text-center">Chargement...</div>
       </AppLayout>
     );
   }
 
+  if (!user) {
+    return (
+      <AppLayout>
+        <LoginRequired />
+      </AppLayout>
+    );
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!title.trim()) {
+      toast.error("Le titre est obligatoire.");
+      return;
+    }
+
+    if (!whatsapp.trim()) {
+      toast.error("Le numéro WhatsApp est obligatoire.");
+      return;
+    }
+
+    if (photos.length > 3) {
+      toast.error("Vous pouvez ajouter au maximum 3 photos.");
+      return;
+    }
+
+    try {
+      setPublishing(true);
+
+      const phone = normalizePhone(whatsapp);
+
+      if (!phone) {
+        toast.error("Numéro WhatsApp invalide.");
+        return;
+      }
+
+      const photoUrls: string[] = [];
+
+      for (const file of photos) {
+        const url = await uploadImage(file, user.id);
+        photoUrls.push(url);
+      }
+
+      const { error } = await supabase.from("ads").insert({
+        user_id: user.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        category: category.trim() || null,
+        price: price ? Number(price) : null,
+        location: location.trim() || null,
+        whatsapp_phone: phone,
+        photo_urls: photoUrls,
+        allow_negotiation: allowNegotiation,
+        trade_enabled: tradeEnabled,
+        status: "available",
+      });
+
+      if (error) {
+        console.error(error);
+        toast.error("Impossible de publier l'annonce.");
+        return;
+      }
+
+      toast.success("Annonce publiée avec succès.");
+
+      setTitle("");
+      setDescription("");
+      setCategory("");
+      setPrice("");
+      setLocation("");
+      setWhatsapp("");
+      setAllowNegotiation(true);
+      setTradeEnabled(false);
+      setPhotos([]);
+    } catch (error) {
+      console.error(error);
+      toast.error("Une erreur est survenue pendant la publication.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   return (
     <AppLayout>
-      <h1 className="text-xl font-extrabold text-foreground">
-        Publier une annonce
-      </h1>
+      <main className="mx-auto w-full max-w-3xl px-4 py-8">
+        <div className="mb-8">
+          <Link
+            to="/"
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            ← Retour à l'accueil
+          </Link>
 
-      <p className="mt-1 text-sm text-muted-foreground">
-        Publiez votre article sur Stuff Market.
-      </p>
+          <h1 className="mt-4 text-3xl font-bold tracking-tight">
+            Publier une annonce
+          </h1>
 
-      <form onSubmit={onSubmit} className="mt-4 space-y-3">
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className={inputClass}
-        />
-
-        <input
-          value={titre}
-          onChange={(e) => setTitre(e.target.value)}
-          placeholder="Titre de l'annonce"
-          className={inputClass}
-        />
-
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Description"
-          rows={4}
-          className={inputClass}
-        />
-
-        <select
-          value={categorie}
-          onChange={(e) => setCategorie(e.target.value)}
-          className={inputClass}
-        >
-          <option value="">Catégorie</option>
-
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-
-        <input
-          value={prix}
-          onChange={(e) =>
-            setPrix(e.target.value.replace(/\D/g, ""))
-          }
-          inputMode="numeric"
-          placeholder="Prix en FCFA"
-          className={inputClass}
-        />
-
-        <input
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="Ville / localisation"
-          className={inputClass}
-        />
-
-        <div className="flex items-center gap-2">
-          <span className="rounded-xl border border-input bg-muted px-3 py-2 text-sm font-semibold">
-            +226
-          </span>
-
-          <input
-            value={whatsapp}
-            onChange={(e) =>
-              setWhatsapp(e.target.value.replace(/\D/g, ""))
-            }
-            inputMode="numeric"
-            placeholder="70000000"
-            className={inputClass}
-          />
+          <p className="mt-2 text-muted-foreground">
+            Présentez votre produit aux acheteurs de Stuff Market.
+          </p>
         </div>
 
-        <label className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
-          <input
-            type="checkbox"
-            checked={allowNegotiation}
-            onChange={(e) =>
-              setAllowNegotiation(e.target.checked)
-            }
-            className="h-4 w-4"
-          />
-
-          <span className="text-sm font-medium">
-            Prix négociable
-          </span>
-        </label>
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6 rounded-3xl border bg-card p-6 shadow-sm"
         >
-          {saving ? "Publication..." : "Publier mon annonce"}
-        </button>
-      </form>
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Nom du produit *
+            </label>
+
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex. iPhone 13"
+              className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Description
+            </label>
+
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Décrivez votre produit..."
+              rows={5}
+              className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Catégorie
+              </label>
+
+              <input
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="Ex. Téléphones"
+                className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Prix en FCFA
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="Ex. 150000"
+                className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Localisation
+              </label>
+
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Ex. Ouagadougou"
+                className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                WhatsApp *
+              </label>
+
+              <input
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="+226..."
+                className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Photos
+            </label>
+
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []).slice(0, 3);
+                setPhotos(files);
+              }}
+              className="w-full rounded-xl border p-3"
+            />
+
+            <p className="mt-2 text-xs text-muted-foreground">
+              Maximum 3 photos.
+            </p>
+          </div>
+
+          <div className="space-y-3 rounded-2xl border p-4">
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={allowNegotiation}
+                onChange={(e) => setAllowNegotiation(e.target.checked)}
+                className="h-5 w-5"
+              />
+
+              <span>
+                <strong>J'accepte le marchandage</strong>
+                <span className="block text-sm text-muted-foreground">
+                  Les acheteurs pourront proposer un autre prix.
+                </span>
+              </span>
+            </label>
+
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={tradeEnabled}
+                onChange={(e) => setTradeEnabled(e.target.checked)}
+                className="h-5 w-5"
+              />
+
+              <span>
+                <strong>J'accepte le troc</strong>
+                <span className="block text-sm text-muted-foreground">
+                  Les acheteurs pourront proposer un échange.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            disabled={publishing}
+            className="w-full rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {publishing ? "Publication..." : "Publier l'annonce"}
+          </button>
+        </form>
+      </main>
     </AppLayout>
   );
 }
