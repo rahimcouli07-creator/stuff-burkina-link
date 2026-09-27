@@ -79,8 +79,12 @@ function AdminPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
+
       if (data.session) {
-        loadAdmin(data.session.user.id, data.session.user.email ?? "");
+        loadAdmin(
+          data.session.user.id,
+          data.session.user.email ?? "",
+        );
       } else {
         setLoading(false);
       }
@@ -105,7 +109,10 @@ function AdminPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function loadAdmin(userId: string, userEmail: string) {
+  async function loadAdmin(
+    userId: string,
+    userEmail: string,
+  ) {
     setLoading(true);
 
     const { data, error } = await supabase
@@ -123,6 +130,7 @@ function AdminPage() {
     }
 
     setAdmin(data);
+
     await Promise.all([
       loadDashboard(),
       loadGroups(),
@@ -135,19 +143,36 @@ function AdminPage() {
   }
 
   async function loadDashboard() {
-    const [ads, services, users, visits] = await Promise.all([
-      supabase.from("ads").select("id", { count: "exact", head: true }),
-      supabase
-        .from("services")
-        .select("id", { count: "exact", head: true }),
-      supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true }),
-      supabase
-        .from("app_visits")
-        .select("visit_date,visitor_id")
-        .order("visit_date", { ascending: false }),
-    ]);
+    const [ads, services, users, visits] =
+      await Promise.all([
+        supabase
+          .from("ads")
+          .select("id", {
+            count: "exact",
+            head: true,
+          }),
+
+        supabase
+          .from("services")
+          .select("id", {
+            count: "exact",
+            head: true,
+          }),
+
+        supabase
+          .from("profiles")
+          .select("id", {
+            count: "exact",
+            head: true,
+          }),
+
+        supabase
+          .from("app_visits")
+          .select("visit_date,visitor_id")
+          .order("visit_date", {
+            ascending: false,
+          }),
+      ]);
 
     setAdsCount(ads.count ?? 0);
     setServicesCount(services.count ?? 0);
@@ -159,7 +184,9 @@ function AdminPage() {
     const { data, error } = await supabase
       .from("promotion_groups")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", {
+        ascending: false,
+      });
 
     if (!error) {
       setGroups((data ?? []) as Group[]);
@@ -168,20 +195,41 @@ function AdminPage() {
 
   async function loadSettings() {
     const [app, ads] = await Promise.all([
-      supabase.from("app_settings").select("*").eq("id", "main").maybeSingle(),
-      supabase.from("ad_settings").select("*").eq("id", "main").maybeSingle(),
+      supabase
+        .from("app_settings")
+        .select("*")
+        .eq("id", "main")
+        .maybeSingle(),
+
+      supabase
+        .from("ad_settings")
+        .select("*")
+        .eq("id", "main")
+        .maybeSingle(),
     ]);
 
     if (app.data) {
-      setShowSold(Boolean(app.data.show_sold_products));
+      setShowSold(
+        Boolean(app.data.show_sold_products),
+      );
     }
 
     if (ads.data) {
-      setMonetag(Boolean(ads.data.monetag_enabled));
-      setAdsterra(Boolean(ads.data.adsterra_enabled));
-      setPopup(Boolean(ads.data.show_popup));
-      setBanner(Boolean(ads.data.show_banner));
-      setPush(Boolean(ads.data.show_push));
+      setMonetag(
+        Boolean(ads.data.monetag_enabled),
+      );
+      setAdsterra(
+        Boolean(ads.data.adsterra_enabled),
+      );
+      setPopup(
+        Boolean(ads.data.show_popup),
+      );
+      setBanner(
+        Boolean(ads.data.show_banner),
+      );
+      setPush(
+        Boolean(ads.data.show_push),
+      );
     }
   }
 
@@ -189,7 +237,9 @@ function AdminPage() {
     const { data } = await supabase
       .from("admin_users")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", {
+        ascending: false,
+      });
 
     setSubAdmins(data ?? []);
   }
@@ -201,14 +251,18 @@ function AdminPage() {
         "id,ad_id,user_id,plan,status,starts_at,ends_at,created_at",
       )
       .eq("status", "active")
-      .order("created_at", { ascending: false });
+      .order("created_at", {
+        ascending: false,
+      });
 
     if (error || !data) {
       setBoostedAds([]);
       return;
     }
 
-    const ids = data.map((item) => item.ad_id);
+    const ids = data.map(
+      (item) => item.ad_id,
+    );
 
     if (!ids.length) {
       setBoostedAds([]);
@@ -224,7 +278,10 @@ function AdminPage() {
 
     const merged = data.map((boost) => ({
       ...boost,
-      ad: ads?.find((ad) => ad.id === boost.ad_id) ?? null,
+      ad:
+        ads?.find(
+          (ad) => ad.id === boost.ad_id,
+        ) ?? null,
     }));
 
     setBoostedAds(merged);
@@ -232,17 +289,20 @@ function AdminPage() {
 
   async function login() {
     if (!email || !password) {
-      toast.error("Remplis l'email et le mot de passe.");
+      toast.error(
+        "Remplis l'email et le mot de passe.",
+      );
       return;
     }
 
     try {
       setLoginLoading(true);
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (error) {
         toast.error(error.message);
@@ -251,7 +311,11 @@ function AdminPage() {
 
       if (data.session) {
         setSession(data.session);
-        await loadAdmin(data.session.user.id, data.session.user.email ?? "");
+
+        await loadAdmin(
+          data.session.user.id,
+          data.session.user.email ?? "",
+        );
       }
     } finally {
       setLoginLoading(false);
@@ -263,17 +327,24 @@ function AdminPage() {
   }
 
   async function addGroup() {
-    if (!groupName.trim() || !groupUrl.trim()) {
-      toast.error("Nom et lien obligatoires.");
+    if (
+      !groupName.trim() ||
+      !groupUrl.trim()
+    ) {
+      toast.error(
+        "Nom et lien obligatoires.",
+      );
       return;
     }
 
-    const { error } = await supabase.from("promotion_groups").insert({
-      name: groupName.trim(),
-      platform: groupPlatform,
-      url: groupUrl.trim(),
-      is_active: true,
-    });
+    const { error } = await supabase
+      .from("promotion_groups")
+      .insert({
+        name: groupName.trim(),
+        platform: groupPlatform,
+        url: groupUrl.trim(),
+        is_active: true,
+      });
 
     if (error) {
       toast.error(error.message);
@@ -284,13 +355,18 @@ function AdminPage() {
     setGroupUrl("");
 
     await loadGroups();
+
     toast.success("Groupe ajouté.");
   }
 
-  async function toggleGroup(group: Group) {
+  async function toggleGroup(
+    group: Group,
+  ) {
     const { error } = await supabase
       .from("promotion_groups")
-      .update({ is_active: !group.is_active })
+      .update({
+        is_active: !group.is_active,
+      })
       .eq("id", group.id);
 
     if (error) {
@@ -301,8 +377,14 @@ function AdminPage() {
     await loadGroups();
   }
 
-  async function deleteGroup(id: string) {
-    if (!confirm("Supprimer ce groupe ?")) return;
+  async function deleteGroup(
+    id: string,
+  ) {
+    if (
+      !confirm("Supprimer ce groupe ?")
+    ) {
+      return;
+    }
 
     const { error } = await supabase
       .from("promotion_groups")
@@ -315,13 +397,18 @@ function AdminPage() {
     }
 
     await loadGroups();
+
     toast.success("Groupe supprimé.");
   }
 
-  async function saveAppSettings(value: boolean) {
+  async function saveAppSettings(
+    value: boolean,
+  ) {
     const { error } = await supabase
       .from("app_settings")
-      .update({ show_sold_products: value })
+      .update({
+        show_sold_products: value,
+      })
       .eq("id", "main");
 
     if (error) {
@@ -330,51 +417,46 @@ function AdminPage() {
     }
 
     setShowSold(value);
-    toast.success("Réglage enregistré.");
-  }
 
-  async function saveAdSettings(
-    field:
-      | "monetag_enabled"
-      | "adsterra_enabled"
-      | "show_popup"
-      | "show_banner"
-      | "show_push",
-    value: boolean,
-  ) {
+    toast.success(
+      "Réglage enregistré.",
+    );
+  }  async function deleteGroup(id: string) {
     const { error } = await supabase
-      .from("ad_settings")
-      .update({ [field]: value })
-      .eq("id", "main");
+      .from("promotion_groups")
+      .delete()
+      .eq("id", id);
 
     if (error) {
       toast.error(error.message);
       return;
     }
 
-    if (field === "monetag_enabled") setMonetag(value);
-    if (field === "adsterra_enabled") setAdsterra(value);
-    if (field === "show_popup") setPopup(value);
-    if (field === "show_banner") setBanner(value);
-    if (field === "show_push") setPush(value);
-
-    toast.success("Réglage enregistré.");
+    setGroups((prev) => prev.filter((group) => group.id !== id));
+    toast.success("Groupe supprimé.");
   }
 
-  async function addSubAdmin() {
-    if (!newAdminEmail.trim() || !newAdminId.trim()) {
-      toast.error("Email et identifiant utilisateur obligatoires.");
+  async function createSubAdmin() {
+    if (!newAdminEmail.trim()) {
+      toast.error("Entrez l'adresse e-mail.");
       return;
     }
 
-    const { error } = await supabase.from("admin_users").insert({
-      id: newAdminId.trim(),
-      email: newAdminEmail.trim(),
-      role: "admin",
-      can_manage_ads: manageAds,
-      can_manage_offers: manageOffers,
-      can_manage_users: manageUsers,
-    });
+    if (!newAdminId.trim()) {
+      toast.error("Entrez l'identifiant Auth de l'utilisateur.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("admin_users")
+      .insert({
+        id: newAdminId.trim(),
+        email: newAdminEmail.trim(),
+        role: "admin",
+        can_manage_ads: newAdminAds,
+        can_manage_offers: newAdminOffers,
+        can_manage_users: newAdminUsers,
+      });
 
     if (error) {
       toast.error(error.message);
@@ -383,18 +465,20 @@ function AdminPage() {
 
     setNewAdminEmail("");
     setNewAdminId("");
+    setNewAdminAds(true);
+    setNewAdminOffers(true);
+    setNewAdminUsers(false);
 
     await loadSubAdmins();
-    toast.success("Sous-admin ajouté.");
+
+    toast.success("Administrateur ajouté.");
   }
 
   async function deleteSubAdmin(id: string) {
-    if (id === admin?.id) {
-      toast.error("Vous ne pouvez pas supprimer votre propre compte.");
+    if (id === user?.id) {
+      toast.error("Vous ne pouvez pas supprimer votre propre compte administrateur.");
       return;
     }
-
-    if (!confirm("Supprimer ce sous-admin ?")) return;
 
     const { error } = await supabase
       .from("admin_users")
@@ -407,39 +491,268 @@ function AdminPage() {
     }
 
     await loadSubAdmins();
+    toast.success("Administrateur supprimé.");
   }
 
-  const activeGroups = useMemo(
-    () => groups.filter((group) => group.is_active),
-    [groups],
-  );
+  async function toggleSubAdminPermission(
+    id: string,
+    field:
+      | "can_manage_ads"
+      | "can_manage_offers"
+      | "can_manage_users",
+    value: boolean,
+  ) {
+    const { error } = await supabase
+      .from("admin_users")
+      .update({
+        [field]: value,
+      })
+      .eq("id", id);
 
-  const uniqueVisitors = useMemo(() => {
-    return new Set(visits.map((visit) => visit.visitor_id)).size;
-  }, [visits]);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
 
-  function buildShareMessage(boost: any) {
-    const ad = boost.ad;
-
-    const productUrl = `${APP_URL}/annonce/${ad?.id ?? boost.ad_id}`;
-
-    return `🛍️ NOUVEAU PRODUIT SUR STUFF MARKET
-
-📦 Produit : ${ad?.title ?? "Produit"}
-💰 Prix : ${ad?.price != null ? `${ad.price} FCFA` : "À négocier"}
-📍 Localisation : ${ad?.location ?? "Burkina Faso"}
-
-Découvrez cette annonce sur Stuff Market.
-
-🔗 Voir le produit :
-${productUrl}
-
-🌐 Accéder à Stuff Market :
-${APP_URL}`;
+    setSubAdmins((prev) =>
+      prev.map((admin) =>
+        admin.id === id
+          ? {
+              ...admin,
+              [field]: value,
+            }
+          : admin,
+      ),
+    );
   }
 
-  async function shareBoost(boost: any) {
-    const message = buildShareMessage(boost);
+  async function markAdAsSold(id: string) {
+    const { error } = await supabase
+      .from("ads")
+      .update({
+        status: "sold",
+      })
+      .eq("id", id);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setAds((prev) =>
+      prev.map((ad) =>
+        ad.id === id
+          ? {
+              ...ad,
+              status: "sold",
+            }
+          : ad,
+      ),
+    );
+
+    toast.success("Produit marqué comme vendu.");
+  }
+
+  async function restoreAd(id: string) {
+    const { error } = await supabase
+      .from("ads")
+      .update({
+        status: "available",
+      })
+      .eq("id", id);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setAds((prev) =>
+      prev.map((ad) =>
+        ad.id === id
+          ? {
+              ...ad,
+              status: "available",
+            }
+          : ad,
+      ),
+    );
+
+    toast.success("Produit remis en vente.");
+  }
+
+  async function deleteAd(id: string) {
+    const { error } = await supabase
+      .from("ads")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setAds((prev) => prev.filter((ad) => ad.id !== id));
+
+    toast.success("Annonce supprimée.");
+  }
+
+  async function deleteService(id: string) {
+    const { error } = await supabase
+      .from("services")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setServices((prev) =>
+      prev.filter((service) => service.id !== id),
+    );
+
+    toast.success("Service supprimé.");
+  }
+
+  async function toggleServiceStatus(
+    id: string,
+    status: "available" | "unavailable",
+  ) {
+    const { error } = await supabase
+      .from("services")
+      .update({
+        status,
+      })
+      .eq("id", id);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setServices((prev) =>
+      prev.map((service) =>
+        service.id === id
+          ? {
+              ...service,
+              status,
+            }
+          : service,
+      ),
+    );
+
+    toast.success(
+      status === "available"
+        ? "Service activé."
+        : "Service désactivé.",
+    );
+  }
+
+  async function activateBoost(
+    adId: string,
+    plan: "free_36h" | "7_days" | "1_month",
+  ) {
+    if (!user) {
+      toast.error("Administrateur non connecté.");
+      return;
+    }
+
+    const selectedPlan = boostPlans.find(
+      (item) => item.id === plan,
+    );
+
+    if (!selectedPlan) {
+      toast.error("Formule introuvable.");
+      return;
+    }
+
+    const startsAt = new Date();
+    const endsAt = new Date(
+      startsAt.getTime() +
+        selectedPlan.duration_hours * 60 * 60 * 1000,
+    );
+
+    const { error } = await supabase
+      .from("ad_boosts")
+      .insert({
+        ad_id: adId,
+        user_id: user.id,
+        plan,
+        status: "active",
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+      });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    await loadBoostedAds();
+
+    toast.success("Publicité activée.");
+  }
+
+  async function cancelBoost(id: string) {
+    const { error } = await supabase
+      .from("ad_boosts")
+      .update({
+        status: "cancelled",
+      })
+      .eq("id", id);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    await loadBoostedAds();
+
+    toast.success("Publicité désactivée.");
+  }
+
+  function buildShareMessage(ad: AdRow) {
+    const directLink =
+      `${APP_URL}/annonce/${ad.id}`;
+
+    return [
+      "📢 NOUVELLE PUBLICITÉ SUR STUFF MARKET",
+      "",
+      `🛍️ ${ad.title}`,
+      `💰 Prix : ${ad.price} FCFA`,
+      `📍 Localisation : ${ad.location || "Non précisée"}`,
+      "",
+      "🔗 Voir directement le produit :",
+      directLink,
+      "",
+      "🌐 Découvrir Stuff Market :",
+      APP_URL,
+      "",
+      "Contactez le vendeur directement sur WhatsApp.",
+    ].join("\n");
+  }
+
+  async function openShareModal(ad: AdRow) {
+    setSelectedBoost(ad);
+    setShareMessage(buildShareMessage(ad));
+    setShareModalOpen(true);
+  }
+
+  async function copyShareMessage() {
+    try {
+      await navigator.clipboard.writeText(shareMessage);
+      toast.success("Message copié.");
+    } catch {
+      toast.error("Impossible de copier le message.");
+    }
+  }
+
+  async function shareToGroup(group: PromotionGroup) {
+    if (!selectedBoost) {
+      return;
+    }
+
+    const message = shareMessage;
 
     try {
       await navigator.clipboard.writeText(message);
@@ -447,255 +760,1387 @@ ${APP_URL}`;
       // Le navigateur peut refuser le presse-papiers.
     }
 
-    setSelectedBoost({
-      ...boost,
-      message,
-    });
+    window.open(group.url, "_blank");
+
+    toast.success(
+      `Groupe ${group.name} ouvert. Le message a été préparé.`,
+    );
   }
 
-  function openGroup(group: Group) {
-    window.open(group.url, "_blank", "noopener,noreferrer");
+  function closeShareModal() {
+    setShareModalOpen(false);
+    setSelectedBoost(null);
+    setShareMessage("");
   }
+
+  function formatDate(value: string | null | undefined) {
+    if (!value) {
+      return "—";
+    }
+
+    return new Date(value).toLocaleString("fr-FR");
+  }
+
+  function formatPrice(value: number | null | undefined) {
+    if (value === null || value === undefined) {
+      return "—";
+    }
+
+    return `${Number(value).toLocaleString("fr-FR")} FCFA`;
+  }
+
+  const filteredAds = ads.filter((ad) => {
+    const query = searchAds.trim().toLowerCase();
+
+    if (!query) {
+      return true;
+    }
+
+    return (
+      ad.title.toLowerCase().includes(query) ||
+      (ad.category || "").toLowerCase().includes(query) ||
+      (ad.location || "").toLowerCase().includes(query)
+    );
+  });
+
+  const filteredServices = services.filter((service) => {
+    const query = searchServices.trim().toLowerCase();
+
+    if (!query) {
+      return true;
+    }
+
+    return (
+      service.title.toLowerCase().includes(query) ||
+      (service.category || "").toLowerCase().includes(query) ||
+      (service.location || "").toLowerCase().includes(query)
+    );
+  });
+
+  const soldAds = ads.filter(
+    (ad) => ad.status === "sold",
+  );
+
+  const tradeAds = ads.filter(
+    (ad) => ad.trade_enabled === true,
+  );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 p-10 text-white">
-        Chargement de l'administration...
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">
+          Chargement du panneau d'administration...
+        </p>
       </div>
     );
   }
 
-  if (!session || !admin) {
+  if (!user || !isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 text-white shadow-2xl backdrop-blur">
-          <div className="mb-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-blue-400">
-              Stuff Market
-            </p>
-            <h1 className="mt-3 text-3xl font-bold">
-              Administration
-            </h1>
-            <p className="mt-2 text-sm text-slate-400">
-              Connectez-vous pour accéder au tableau de bord.
-            </p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Administration Stuff Market</CardTitle>
+            <CardDescription>
+              Connectez-vous avec votre compte administrateur.
+            </CardDescription>
+          </CardHeader>
 
-          <div className="space-y-4">
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email administrateur"
+          <CardContent className="space-y-4">
+            <Input
               type="email"
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none focus:border-blue-500"
+              placeholder="Adresse e-mail"
+              value={loginEmail}
+              onChange={(event) =>
+                setLoginEmail(event.target.value)
+              }
             />
 
-            <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mot de passe"
+            <Input
               type="password"
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none focus:border-blue-500"
+              placeholder="Mot de passe"
+              value={loginPassword}
+              onChange={(event) =>
+                setLoginPassword(event.target.value)
+              }
             />
 
-            <button
+            <Button
+              className="w-full"
               onClick={login}
               disabled={loginLoading}
-              className="w-full rounded-2xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
             >
-              {loginLoading ? "Connexion..." : "Se connecter"}
-            </button>
-          </div>
-        </div>
+              {loginLoading
+                ? "Connexion..."
+                : "Se connecter"}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  const menu = [
-    ["dashboard", "Tableau de bord"],
-    ["ads", "Annonces"],
-    ["troc", "Troc"],
-    ["services", "Services"],
-    ["users", "Utilisateurs"],
-    ["sold", "Produits vendus"],
-    ["advertising", "Publicité"],
-    ["boosts", "Produits boostés"],
-    ["groups", "Groupes de partage"],
-    ["admins", "Sous-administrateurs"],
-  ];
-
   return (
-    <div className="min-h-screen bg-[#070b14] text-white">
-      <div className="flex min-h-screen flex-col lg:flex-row">
-        <aside className="w-full border-b border-white/10 bg-[#0b1020] p-4 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">
-          <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-400">
-              Stuff Market
-            </p>
-
-            <h1 className="mt-2 text-2xl font-bold">
-              Admin Center
+    <AppLayout>
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">
+              Administration Stuff Market
             </h1>
+
+            <p className="text-sm text-muted-foreground">
+              Gestion de la plateforme et des publications.
+            </p>
           </div>
 
-          <nav className="grid grid-cols-2 gap-2 lg:grid-cols-1">
-            {menu.map(([id, label]) => (
-              <button
-                key={id}
-                onClick={() => setActiveSection(id)}
-                className={`rounded-xl px-4 py-3 text-left text-sm font-medium transition ${
-                  activeSection === id
-                    ? "bg-blue-600 text-white"
-                    : "text-slate-300 hover:bg-white/5"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-
-          <button
+          <Button
+            variant="outline"
             onClick={logout}
-            className="mt-6 w-full rounded-xl border border-red-500/20 px-4 py-3 text-left text-sm text-red-300 hover:bg-red-500/10"
           >
             Se déconnecter
-          </button>
-        </aside>
+          </Button>
+        </div>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-10">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-              <div>
-                <p className="text-sm text-blue-400">
-                  Administration
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>
+                Utilisateurs
+              </CardDescription>
+              <CardTitle className="text-2xl">
+                {stats.users}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>
+                Annonces
+              </CardDescription>
+              <CardTitle className="text-2xl">
+                {stats.ads}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>
+                Services
+              </CardDescription>
+              <CardTitle className="text-2xl">
+                {stats.services}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>
+                Visites aujourd'hui
+              </CardDescription>
+              <CardTitle className="text-2xl">
+                {stats.visitsToday}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={
+              activeSection === "dashboard"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setActiveSection("dashboard")
+            }
+          >
+            Tableau de bord
+          </Button>
+
+          <Button
+            variant={
+              activeSection === "ads"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setActiveSection("ads")
+            }
+          >
+            Annonces
+          </Button>
+
+          <Button
+            variant={
+              activeSection === "troc"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setActiveSection("troc")
+            }
+          >
+            Troc
+          </Button>
+
+          <Button
+            variant={
+              activeSection === "services"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setActiveSection("services")
+            }
+          >
+            Services
+          </Button>
+
+          <Button
+            variant={
+              activeSection === "sold"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setActiveSection("sold")
+            }
+          >
+            Produits vendus
+          </Button>
+
+          <Button
+            variant={
+              activeSection === "boosts"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setActiveSection("boosts")
+            }
+          >
+            Publicités
+          </Button>
+
+          <Button
+            variant={
+              activeSection === "groups"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setActiveSection("groups")
+            }
+          >
+            Groupes
+          </Button>
+
+          <Button
+            variant={
+              activeSection === "admins"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setActiveSection("admins")
+            }
+          >
+            Administrateurs
+          </Button>
+
+          <Button
+            variant={
+              activeSection === "settings"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setActiveSection("settings")
+            }
+          >
+            Réglages
+          </Button>
+        </div>
+
+        {activeSection === "dashboard" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Tableau de bord</CardTitle>
+              <CardDescription>
+                Vue générale de Stuff Market.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">
+                  Annonces disponibles
                 </p>
-
-                <h2 className="mt-1 text-3xl font-bold">
-                  {menu.find((item) => item[0] === activeSection)?.[1]}
-                </h2>
+                <p className="text-2xl font-bold">
+                  {
+                    ads.filter(
+                      (ad) =>
+                        ad.status === "available",
+                    ).length
+                  }
+                </p>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
-                <span className="text-slate-400">Connecté :</span>{" "}
-                {admin.email}
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">
+                  Produits en troc
+                </p>
+                <p className="text-2xl font-bold">
+                  {tradeAds.length}
+                </p>
               </div>
-            </div>
 
-            {activeSection === "dashboard" && (
-              <section>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {[
-                    ["Annonces", adsCount],
-                    ["Services", servicesCount],
-                    ["Utilisateurs", usersCount],
-                    ["Visiteurs uniques", uniqueVisitors],
-                  ].map(([label, value]) => (
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">
+                  Produits vendus
+                </p>
+                <p className="text-2xl font-bold">
+                  {soldAds.length}
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">
+                  Publicités actives
+                </p>
+                <p className="text-2xl font-bold">
+                  {boostedAds.length}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeSection === "ads" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestion des annonces</CardTitle>
+              <CardDescription>
+                Rechercher, supprimer ou marquer les annonces
+                comme vendues.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <Input
+                placeholder="Rechercher une annonce..."
+                value={searchAds}
+                onChange={(event) =>
+                  setSearchAds(event.target.value)
+                }
+              />
+
+              <div className="space-y-3">
+                {filteredAds.map((ad) => (
+                  <div
+                    key={ad.id}
+                    className="rounded-lg border p-4"
+                  >
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <h3 className="font-semibold">
+                          {ad.title}
+                        </h3>
+
+                        <p className="text-sm text-muted-foreground">
+                          {formatPrice(ad.price)} •{" "}
+                          {ad.location || "Sans localisation"}
+                        </p>
+
+                        <p className="text-xs text-muted-foreground">
+                          Statut : {ad.status}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {ad.status === "available" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              markAdAsSold(ad.id)
+                            }
+                          >
+                            Marquer vendu
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              restoreAd(ad.id)
+                            }
+                          >
+                            Remettre en vente
+                          </Button>
+                        )}
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            deleteAd(ad.id)
+                          }
+                        >
+                          Supprimer
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {filteredAds.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Aucune annonce trouvée.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}        {activeSection === "troc" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Produits en troc</CardTitle>
+              <CardDescription>
+                Annonces pour lesquelles le vendeur accepte les échanges.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              {tradeAds.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Aucun produit disponible en troc.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {tradeAds.map((ad) => (
                     <div
-                      key={String(label)}
-                      className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl"
+                      key={ad.id}
+                      className="rounded-lg border p-4"
                     >
-                      <p className="text-sm text-slate-400">{label}</p>
-                      <p className="mt-3 text-4xl font-bold">
-                        {value}
-                      </p>
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h3 className="font-semibold">
+                            {ad.title}
+                          </h3>
+
+                          <p className="text-sm text-muted-foreground">
+                            {formatPrice(ad.price)} •{" "}
+                            {ad.location || "Sans localisation"}
+                          </p>
+
+                          <p className="text-xs text-muted-foreground">
+                            Statut : {ad.status}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {ad.status === "available" ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                markAdAsSold(ad.id)
+                              }
+                            >
+                              Marquer vendu
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                restoreAd(ad.id)
+                              }
+                            >
+                              Remettre en vente
+                            </Button>
+                          )}
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() =>
+                              deleteAd(ad.id)
+                            }
+                          >
+                            Supprimer
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-                <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6">
-                  <h3 className="text-xl font-semibold">
-                    Visites de l'application
-                  </h3>
+        {activeSection === "services" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestion des services</CardTitle>
+              <CardDescription>
+                Gérer les services publiés sur Stuff Market.
+              </CardDescription>
+            </CardHeader>
 
-                  <div className="mt-5 overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="text-slate-400">
-                        <tr>
-                          <th className="pb-3">Date</th>
-                          <th className="pb-3">Visiteurs</th>
-                        </tr>
-                      </thead>
+            <CardContent className="space-y-4">
+              <Input
+                placeholder="Rechercher un service..."
+                value={searchServices}
+                onChange={(event) =>
+                  setSearchServices(event.target.value)
+                }
+              />
 
-                      <tbody>
-                        {Array.from(
-                          visits.reduce((map, visit) => {
-                            map.set(
-                              visit.visit_date,
-                              (map.get(visit.visit_date) ?? 0) + 1,
-                            );
-                            return map;
-                          }, new Map<string, number>()),
-                        )
-                          .slice(0, 20)
-                          .map(([date, count]) => (
-                            <tr
-                              key={date}
-                              className="border-t border-white/5"
+              <div className="space-y-3">
+                {filteredServices.map((service) => (
+                  <div
+                    key={service.id}
+                    className="rounded-lg border p-4"
+                  >
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <h3 className="font-semibold">
+                          {service.title}
+                        </h3>
+
+                        <p className="text-sm text-muted-foreground">
+                          {formatPrice(service.price)} •{" "}
+                          {service.location || "Sans localisation"}
+                        </p>
+
+                        <p className="text-xs text-muted-foreground">
+                          Statut : {service.status}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {service.status === "available" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              toggleServiceStatus(
+                                service.id,
+                                "unavailable",
+                              )
+                            }
+                          >
+                            Désactiver
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              toggleServiceStatus(
+                                service.id,
+                                "available",
+                              )
+                            }
+                          >
+                            Activer
+                          </Button>
+                        )}
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            deleteService(service.id)
+                          }
+                        >
+                          Supprimer
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {filteredServices.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Aucun service trouvé.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeSection === "sold" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Produits vendus</CardTitle>
+              <CardDescription>
+                Liste des annonces marquées comme vendues.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              {soldAds.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Aucun produit vendu.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {soldAds.map((ad) => (
+                    <div
+                      key={ad.id}
+                      className="rounded-lg border p-4"
+                    >
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h3 className="font-semibold">
+                            {ad.title}
+                          </h3>
+
+                          <p className="text-sm text-muted-foreground">
+                            {formatPrice(ad.price)} •{" "}
+                            {ad.location || "Sans localisation"}
+                          </p>
+
+                          <p className="text-xs text-muted-foreground">
+                            Vendu le : {formatDate(ad.updated_at)}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              restoreAd(ad.id)
+                            }
+                          >
+                            Remettre en vente
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() =>
+                              deleteAd(ad.id)
+                            }
+                          >
+                            Supprimer
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {activeSection === "boosts" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Publicités et boosts</CardTitle>
+              <CardDescription>
+                Activer une publicité et partager les produits
+                boostés dans les groupes enregistrés.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              <div>
+                <h3 className="mb-3 font-semibold">
+                  Activer une publicité
+                </h3>
+
+                <div className="space-y-3">
+                  {ads
+                    .filter(
+                      (ad) =>
+                        ad.status === "available",
+                    )
+                    .map((ad) => (
+                      <div
+                        key={ad.id}
+                        className="rounded-lg border p-4"
+                      >
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                          <div>
+                            <h4 className="font-semibold">
+                              {ad.title}
+                            </h4>
+
+                            <p className="text-sm text-muted-foreground">
+                              {formatPrice(ad.price)}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                activateBoost(
+                                  ad.id,
+                                  "free_36h",
+                                )
+                              }
                             >
-                              <td className="py-3">{date}</td>
-                              <td className="py-3">{count}</td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
+                              Gratuit 36h
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                activateBoost(
+                                  ad.id,
+                                  "7_days",
+                                )
+                              }
+                            >
+                              7 jours — 500 FCFA
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                activateBoost(
+                                  ad.id,
+                                  "1_month",
+                                )
+                              }
+                            >
+                              1 mois — 1000 FCFA
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="mb-3 font-semibold">
+                  Publicités actuellement actives
+                </h3>
+
+                {boostedAds.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Aucune publicité active.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {boostedAds.map((boost) => (
+                      <div
+                        key={boost.id}
+                        className="rounded-lg border p-4"
+                      >
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                          <div>
+                            <h4 className="font-semibold">
+                              {boost.ad?.title ||
+                                "Annonce"}
+                            </h4>
+
+                            <p className="text-sm text-muted-foreground">
+                              Formule : {boost.plan}
+                            </p>
+
+                            <p className="text-sm text-muted-foreground">
+                              Expire le :{" "}
+                              {formatDate(
+                                boost.ends_at,
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {boost.ad && (
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  openShareModal(
+                                    boost.ad!,
+                                  )
+                                }
+                              >
+                                Partager la publicité
+                              </Button>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                cancelBoost(
+                                  boost.id,
+                                )
+                              }
+                            >
+                              Désactiver
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeSection === "groups" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Groupes de partage</CardTitle>
+              <CardDescription>
+                Ajoutez les groupes WhatsApp, Facebook et Telegram
+                utilisés pour partager les publicités.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              <div className="grid gap-3 md:grid-cols-3">
+                <Input
+                  placeholder="Nom du groupe"
+                  value={newGroupName}
+                  onChange={(event) =>
+                    setNewGroupName(event.target.value)
+                  }
+                />
+
+                <select
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  value={newGroupPlatform}
+                  onChange={(event) =>
+                    setNewGroupPlatform(
+                      event.target.value as
+                        | "whatsapp"
+                        | "facebook"
+                        | "telegram",
+                    )
+                  }
+                >
+                  <option value="whatsapp">
+                    WhatsApp
+                  </option>
+                  <option value="facebook">
+                    Facebook
+                  </option>
+                  <option value="telegram">
+                    Telegram
+                  </option>
+                </select>
+
+                <Input
+                  placeholder="Lien du groupe"
+                  value={newGroupUrl}
+                  onChange={(event) =>
+                    setNewGroupUrl(event.target.value)
+                  }
+                />
+              </div>
+
+              <Button onClick={addGroup}>
+                Ajouter le groupe
+              </Button>
+
+              <div className="space-y-3">
+                {groups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div>
+                      <p className="font-semibold">
+                        {group.name}
+                      </p>
+
+                      <p className="text-sm text-muted-foreground">
+                        {group.platform}
+                      </p>
+
+                      <p className="max-w-full break-all text-xs text-muted-foreground">
+                        {group.url}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          toggleGroup(
+                            group.id,
+                            !group.is_active,
+                          )
+                        }
+                      >
+                        {group.is_active
+                          ? "Désactiver"
+                          : "Activer"}
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() =>
+                          deleteGroup(group.id)
+                        }
+                      >
+                        Supprimer
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                {groups.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Aucun groupe enregistré.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}        {activeSection === "admins" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Administrateurs</CardTitle>
+              <CardDescription>
+                Gérer les comptes administrateurs et leurs permissions.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              <div className="rounded-lg border p-4 space-y-4">
+                <h3 className="font-semibold">
+                  Ajouter un administrateur
+                </h3>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Input
+                    placeholder="E-mail de l'utilisateur"
+                    value={newAdminEmail}
+                    onChange={(event) =>
+                      setNewAdminEmail(event.target.value)
+                    }
+                  />
+
+                  <Input
+                    placeholder="ID Auth de l'utilisateur"
+                    value={newAdminId}
+                    onChange={(event) =>
+                      setNewAdminId(event.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={newAdminAds}
+                      onChange={(event) =>
+                        setNewAdminAds(event.target.checked)
+                      }
+                    />
+                    Gérer les annonces
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={newAdminOffers}
+                      onChange={(event) =>
+                        setNewAdminOffers(event.target.checked)
+                      }
+                    />
+                    Gérer les offres
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={newAdminUsers}
+                      onChange={(event) =>
+                        setNewAdminUsers(event.target.checked)
+                      }
+                    />
+                    Gérer les utilisateurs
+                  </label>
+                </div>
+
+                <Button onClick={createSubAdmin}>
+                  Ajouter l'administrateur
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {subAdmins.map((admin) => (
+                  <div
+                    key={admin.id}
+                    className="rounded-lg border p-4 space-y-4"
+                  >
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="font-semibold">
+                          {admin.email}
+                        </p>
+
+                        <p className="text-xs text-muted-foreground">
+                          Rôle : {admin.role}
+                        </p>
+                      </div>
+
+                      {admin.id !== user?.id && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            deleteSubAdmin(admin.id)
+                          }
+                        >
+                          Supprimer
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-4">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={admin.can_manage_ads}
+                          onChange={(event) =>
+                            toggleSubAdminPermission(
+                              admin.id,
+                              "can_manage_ads",
+                              event.target.checked,
+                            )
+                          }
+                        />
+                        Annonces
+                      </label>
+
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={admin.can_manage_offers}
+                          onChange={(event) =>
+                            toggleSubAdminPermission(
+                              admin.id,
+                              "can_manage_offers",
+                              event.target.checked,
+                            )
+                          }
+                        />
+                        Offres
+                      </label>
+
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={admin.can_manage_users}
+                          onChange={(event) =>
+                            toggleSubAdminPermission(
+                              admin.id,
+                              "can_manage_users",
+                              event.target.checked,
+                            )
+                          }
+                        />
+                        Utilisateurs
+                      </label>
+                    </div>
+                  </div>
+                ))}
+
+                {subAdmins.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Aucun administrateur secondaire.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeSection === "settings" && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Réglages de l'application</CardTitle>
+                <CardDescription>
+                  Activer ou désactiver certaines fonctionnalités
+                  visibles sur l'accueil.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-semibold">
+                      Produits vendus
+                    </p>
+
+                    <p className="text-sm text-muted-foreground">
+                      Afficher le bouton « Produits vendus » sur
+                      l'accueil.
+                    </p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={showSold}
+                    onChange={(event) =>
+                      saveAppSettings(
+                        event.target.checked,
+                      )
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Publicité</CardTitle>
+                <CardDescription>
+                  Contrôler les formats publicitaires.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-semibold">
+                      Monetag
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Activer le système publicitaire Monetag.
+                    </p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={adSettings.monetag_enabled}
+                    onChange={(event) =>
+                      setAdSettings((prev) => ({
+                        ...prev,
+                        monetag_enabled:
+                          event.target.checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-semibold">
+                      Adsterra
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Activer le système publicitaire Adsterra.
+                    </p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={adSettings.adsterra_enabled}
+                    onChange={(event) =>
+                      setAdSettings((prev) => ({
+                        ...prev,
+                        adsterra_enabled:
+                          event.target.checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-semibold">
+                      Popup
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Autoriser l'affichage des publicités popup.
+                    </p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={adSettings.show_popup}
+                    onChange={(event) =>
+                      setAdSettings((prev) => ({
+                        ...prev,
+                        show_popup:
+                          event.target.checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-semibold">
+                      Bannière
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Autoriser l'affichage des bannières.
+                    </p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={adSettings.show_banner}
+                    onChange={(event) =>
+                      setAdSettings((prev) => ({
+                        ...prev,
+                        show_banner:
+                          event.target.checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-semibold">
+                      Push
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Autoriser les publicités push.
+                    </p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={adSettings.show_push}
+                    onChange={(event) =>
+                      setAdSettings((prev) => ({
+                        ...prev,
+                        show_push:
+                          event.target.checked,
+                      }))
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {shareModalOpen && selectedBoost && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle>
+                  Publicité prête à être partagée
+                </CardTitle>
+
+                <CardDescription>
+                  Félicitations ! Le produit est prêt à être
+                  partagé dans plusieurs groupes WhatsApp,
+                  Facebook et Telegram.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-5">
+                <div className="rounded-lg border p-4">
+                  <p className="mb-2 font-semibold">
+                    Message de partage
+                  </p>
+
+                  <textarea
+                    className="min-h-[260px] w-full rounded-md border bg-background p-3 text-sm"
+                    value={shareMessage}
+                    onChange={(event) =>
+                      setShareMessage(event.target.value)
+                    }
+                  />
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={copyShareMessage}
+                    >
+                      Copier le message
+                    </Button>
                   </div>
                 </div>
-              </section>
-            )}
 
-            {activeSection === "ads" && (
-              <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-                <h3 className="text-xl font-semibold">
-                  Gestion des annonces
-                </h3>
+                <div>
+                  <h3 className="mb-3 font-semibold">
+                    Groupes disponibles
+                  </h3>
 
-                <p className="mt-2 text-slate-400">
-                  {adsCount} annonce(s) actuellement enregistrée(s).
-                </p>
+                  <div className="space-y-2">
+                    {groups
+                      .filter(
+                        (group) =>
+                          group.is_active,
+                      )
+                      .map((group) => (
+                        <div
+                          key={group.id}
+                          className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              {group.name}
+                            </p>
 
-                <p className="mt-6 text-sm text-slate-500">
-                  Les actions détaillées sur les annonces pourront être
-                  ajoutées ici sans modifier le reste du tableau de bord.
-                </p>
-              </section>
-            )}
+                            <p className="text-xs text-muted-foreground">
+                              {group.platform}
+                            </p>
+                          </div>
 
-            {activeSection === "troc" && (
-              <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-                <h3 className="text-xl font-semibold">
-                  Gestion du troc
-                </h3>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              shareToGroup(group)
+                            }
+                          >
+                            Ouvrir et partager
+                          </Button>
+                        </div>
+                      ))}
 
-                <p className="mt-2 text-slate-400">
-                  Les annonces ayant activé « J'accepte le troc » utilisent
-                  le champ <code>trade_enabled</code>.
-                </p>
-              </section>
-            )}
+                    {groups.filter(
+                      (group) =>
+                        group.is_active,
+                    ).length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Aucun groupe actif. Ajoutez d'abord
+                        vos groupes dans la section « Groupes ».
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-            {activeSection === "services" && (
-              <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-                <h3 className="text-xl font-semibold">
-                  Gestion des services
-                </h3>
-
-                <p className="mt-2 text-slate-400">
-                  {servicesCount} service(s) enregistré(s).
-                </p>
-              </section>
-            )}
-
-            {activeSection === "users" && (
-              <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-                <h3 className="text-xl font-semibold">
-                  Utilisateurs
-                </h3>
-
-                <p className="mt-2 text-slate-400">
-                  {usersCount} utilisateur(s) enregistré(s).
-                </p>
-              </section>
-            )}
-
-            {activeSection === "sold" && (
-   
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={closeShareModal}
+                  >
+                    Fermer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+}
