@@ -43,7 +43,6 @@ export type Database = {
           whatsapp_phone?: string | null;
           whatsapp_verified?: boolean;
         };
-        Relationships: [];
       };
 
       ads: {
@@ -66,6 +65,7 @@ export type Database = {
           reference: string | null;
           allow_negotiation: boolean;
           status: string | null;
+          trade_enabled: boolean;
         };
         Insert: {
           id?: string;
@@ -86,6 +86,7 @@ export type Database = {
           reference?: string | null;
           allow_negotiation?: boolean;
           status?: string | null;
+          trade_enabled?: boolean;
         };
         Update: {
           id?: string;
@@ -106,8 +107,8 @@ export type Database = {
           reference?: string | null;
           allow_negotiation?: boolean;
           status?: string | null;
+          trade_enabled?: boolean;
         };
-        Relationships: [];
       };
 
       businesses: {
@@ -123,6 +124,10 @@ export type Database = {
           photo_urls: string[] | null;
           created_at: string;
           updated_at: string;
+          status: string;
+          phone: string | null;
+          email: string | null;
+          website: string | null;
         };
         Insert: {
           id?: string;
@@ -136,6 +141,10 @@ export type Database = {
           photo_urls?: string[] | null;
           created_at?: string;
           updated_at?: string;
+          status?: string;
+          phone?: string | null;
+          email?: string | null;
+          website?: string | null;
         };
         Update: {
           id?: string;
@@ -149,144 +158,11 @@ export type Database = {
           photo_urls?: string[] | null;
           created_at?: string;
           updated_at?: string;
-        };
-        Relationships: [];
-      };
-
-      favorites: {
-        Row: {
-          id: string;
-          user_id: string;
-          ad_id: string | null;
-          service_id: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          ad_id?: string | null;
-          service_id?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          ad_id?: string | null;
-          service_id?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-
-      notifications: {
-        Row: {
-          id: string;
-          user_id: string;
-          title: string;
-          message: string;
-          type: string;
-          is_read: boolean;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          title: string;
-          message: string;
-          type: string;
-          is_read?: boolean;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          title?: string;
-          message?: string;
-          type?: string;
-          is_read?: boolean;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-
-      profiles: {
-        Row: {
-          id: string;
-          email: string | null;
-          whatsapp_phone: string | null;
-          whatsapp_verified: boolean;
-          created_at: string;
-          first_name: string | null;
-          last_name: string | null;
-          city: string | null;
-          locality: string | null;
-          region_id: string | null;
-          province_id: string | null;
-          stuff_id: string | null;
-        };
-        Insert: {
-          id: string;
-          email?: string | null;
-          whatsapp_phone: string;
-          whatsapp_verified?: boolean;
-          created_at?: string;
-          first_name?: string | null;
-          last_name?: string | null;
-          city?: string | null;
-          locality?: string | null;
-          region_id?: string | null;
-          province_id?: string | null;
-          stuff_id?: string | null;
-        };
-        Update: {
-          id?: string;
-          email?: string | null;
-          whatsapp_phone?: string;
-          whatsapp_verified?: boolean;
-          created_at?: string;
-          first_name?: string | null;
-          last_name?: string | null;
-          city?: string | null;
-          locality?: string | null;
-          region_id?: string | null;
-          province_id?: string | null;
-          stuff_id?: string | null;
-        };
-        Relationships: [];
-      };
-
-      reports: {
-        Row: {
-          id: string;
-          user_id: string;
-          ad_id: string | null;
-          service_id: string | null;
-          reason: string;
-          description: string | null;
-          status: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          ad_id?: string | null;
-          service_id?: string | null;
-          reason: string;
-          description?: string | null;
           status?: string;
-          created_at?: string;
+          phone?: string | null;
+          email?: string | null;
+          website?: string | null;
         };
-        Update: {
-          id?: string;
-          user_id?: string;
-          ad_id?: string | null;
-          service_id?: string | null;
-          reason?: string;
-          description?: string | null;
-          status?: string;
-          created_at?: string;
-        };
-        Relationships: [];
       };
 
       services: {
@@ -335,13 +211,370 @@ export type Database = {
           location?: string | null;
           status?: string | null;
         };
-        Relationships: [];
+      };
+
+      profiles: {
+        Row: {
+          id: string;
+          email: string | null;
+          whatsapp_phone: string;
+          whatsapp_verified: boolean;
+          created_at: string;
+          first_name: string | null;
+          last_name: string | null;
+          city: string | null;
+          stuff_id: string | null;
+          whatsapp_country_code: string | null;
+          locality: string | null;
+          region_id: number | null;
+          province_id: number | null;
+        };
+        Insert: {
+          id: string;
+          email?: string | null;
+          whatsapp_phone: string;
+          whatsapp_verified?: boolean;
+          created_at?: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          city?: string | null;
+          stuff_id?: string | null;
+          whatsapp_country_code?: string | null;
+          locality?: string | null;
+          region_id?: number | null;
+          province_id?: number | null;
+        };
+        Update: {
+          id?: string;
+          email?: string | null;
+          whatsapp_phone?: string;
+          whatsapp_verified?: boolean;
+          created_at?: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          city?: string | null;
+          stuff_id?: string | null;
+          whatsapp_country_code?: string | null;
+          locality?: string | null;
+          region_id?: number | null;
+          province_id?: number | null;
+        };
+      };
+
+      favorites: {
+        Row: {
+          id: string;
+          user_id: string;
+          ad_id: string | null;
+          service_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          ad_id?: string | null;
+          service_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          ad_id?: string | null;
+          service_id?: string | null;
+          created_at?: string;
+        };
+      };
+
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          message: string;
+          type: string;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          message: string;
+          type?: string;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          message?: string;
+          type?: string;
+          is_read?: boolean;
+          created_at?: string;
+        };
+      };
+
+      reports: {
+        Row: {
+          id: string;
+          user_id: string;
+          ad_id: string | null;
+          service_id: string | null;
+          reason: string;
+          description: string | null;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          ad_id?: string | null;
+          service_id?: string | null;
+          reason: string;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          ad_id?: string | null;
+          service_id?: string | null;
+          reason?: string;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+      };
+
+      app_visits: {
+        Row: {
+          id: string;
+          visitor_id: string;
+          user_id: string | null;
+          visit_date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          visitor_id: string;
+          user_id?: string | null;
+          visit_date?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          visitor_id?: string;
+          user_id?: string | null;
+          visit_date?: string;
+          created_at?: string;
+        };
+      };
+
+      app_settings: {
+        Row: {
+          id: string;
+          show_sold_products: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          show_sold_products?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          show_sold_products?: boolean;
+          updated_at?: string;
+        };
+      };
+
+      ad_settings: {
+        Row: {
+          id: string;
+          monetag_enabled: boolean;
+          adsterra_enabled: boolean;
+          show_popup: boolean;
+          show_banner: boolean;
+          show_push: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          monetag_enabled?: boolean;
+          adsterra_enabled?: boolean;
+          show_popup?: boolean;
+          show_banner?: boolean;
+          show_push?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          monetag_enabled?: boolean;
+          adsterra_enabled?: boolean;
+          show_popup?: boolean;
+          show_banner?: boolean;
+          show_push?: boolean;
+          updated_at?: string;
+        };
+      };
+
+      boost_plans: {
+        Row: {
+          id: string;
+          name: string;
+          price: number;
+          duration_hours: number;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          price: number;
+          duration_hours: number;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          price?: number;
+          duration_hours?: number;
+        };
+      };
+
+      business_plans: {
+        Row: {
+          id: string;
+          name: string;
+          price: number;
+          duration_hours: number;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          price: number;
+          duration_hours: number;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          price?: number;
+          duration_hours?: number;
+        };
+      };
+
+      ad_boosts: {
+        Row: {
+          id: string;
+          ad_id: string;
+          user_id: string;
+          plan: string;
+          status: string;
+          starts_at: string;
+          ends_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          ad_id: string;
+          user_id: string;
+          plan: string;
+          status?: string;
+          starts_at?: string;
+          ends_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          ad_id?: string;
+          user_id?: string;
+          plan?: string;
+          status?: string;
+          starts_at?: string;
+          ends_at?: string;
+          created_at?: string;
+        };
+      };
+
+      promotion_groups: {
+        Row: {
+          id: string;
+          name: string;
+          platform: string;
+          url: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          platform: string;
+          url: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          platform?: string;
+          url?: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+      };
+
+      cities: {
+        Row: {
+          id: number;
+          name: string;
+          province_id: number | null;
+        };
+        Insert: {
+          id?: number;
+          name: string;
+          province_id?: number | null;
+        };
+        Update: {
+          id?: number;
+          name?: string;
+          province_id?: number | null;
+        };
+      };
+
+      regions: {
+        Row: {
+          id: number;
+          name: string;
+        };
+        Insert: {
+          id?: number;
+          name: string;
+        };
+        Update: {
+          id?: number;
+          name?: string;
+        };
+      };
+
+      provinces: {
+        Row: {
+          id: number;
+          name: string;
+          region_id: number;
+        };
+        Insert: {
+          id?: number;
+          name: string;
+          region_id: number;
+        };
+        Update: {
+          id?: number;
+          name?: string;
+          region_id?: number;
+        };
       };
     };
 
-    Views: {
-      [_ in never]: never;
-    };
+    Views: Record<string, never>;
 
     Functions: {
       get_email_by_stuff_id: {
@@ -350,94 +583,25 @@ export type Database = {
         };
         Returns: string | null;
       };
+
+      record_app_visit: {
+        Args: {
+          p_visitor_id: string;
+        };
+        Returns: undefined;
+      };
+
+      has_role: {
+        Args: {
+          _user_id: string;
+          _role: string;
+        };
+        Returns: boolean;
+      };
     };
 
-    Enums: {
-      [_ in never]: never;
-    };
+    Enums: Record<string, never>;
 
-    CompositeTypes: {
-      [_ in never]: never;
-    };
+    CompositeTypes: Record<string, never>;
   };
 };
-
-export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends {
-    schema: keyof Database;
-  }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = PublicTableNameOrOptions extends {
-  schema: keyof Database;
-}
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Row: infer R;
-    }
-    ? R
-    : never
-  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
-    ? Database["public"]["Tables"][PublicTableNameOrOptions]["Row"]
-    : never;
-
-export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends {
-    schema: keyof Database;
-  }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = PublicTableNameOrOptions extends {
-  schema: keyof Database;
-}
-  ? Database["public"]["Tables"][TableName] extends {
-      Insert: infer I;
-    }
-    ? I
-    : never
-  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
-    ? Database["public"]["Tables"][PublicTableNameOrOptions]["Insert"]
-    : never;
-
-export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends {
-    schema: keyof Database;
-  }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = PublicTableNameOrOptions extends {
-  schema: keyof Database;
-}
-  ? Database["public"]["Tables"][TableName] extends {
-      Update: infer U;
-    }
-    ? U
-    : never
-  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
-    ? Database["public"]["Tables"][PublicTableNameOrOptions]["Update"]
-    : never;
-
-export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof Database["public"]["Enums"]
-    | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends {
-    schema: keyof Database;
-  }
-    ? keyof Database["public"]["Enums"]
-    : never = never,
-> = PublicEnumNameOrOptions extends {
-  schema: keyof Database;
-}
-  ? Database["public"]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
-    ? Database["public"]["Enums"][PublicEnumNameOrOptions]
-    : never;
