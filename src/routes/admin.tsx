@@ -1,602 +1,295 @@
-import { createFileRoute } from "@tanstack/react-router";
-import React, { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 
-export const Route = createFileRoute("/admin")({
-  component: AdminPage,
+import { AppLayout } from "@/components/AppLayout";
+import { LoginRequired } from "@/components/LoginRequired";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { normalizePhone, uploadImage } from "@/lib/market";
+
+export const Route = createFileRoute("/publier")({
+  component: PublierPage,
 });
 
-type AdminProfile = {
-  id: string;
-  email: string;
-  role: string;
-  can_manage_ads: boolean;
-  can_manage_offers: boolean;
-  can_manage_users: boolean;
-};
+function PublierPage() {
+  const { user, loading } = useAuth();
 
-type VisitStat = {
-  visit_date: string;
-  visiteurs_uniques: number;
-};
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [price, setPrice] = useState("");
+  const [location, setLocation] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [allowNegotiation, setAllowNegotiation] = useState(true);
+  const [tradeEnabled, setTradeEnabled] = useState(false);
 
-function AdminPage() {
-  const [session, setSession] = useState<any>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
-  const [subAdmins, setSubAdmins] = useState<AdminProfile[]>([]);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [publishing, setPublishing] = useState(false);
 
-  const [newAdminEmail, setNewAdminEmail] = useState("");
-  const [newCanManageAds, setNewCanManageAds] = useState(true);
-  const [newCanManageOffers, setNewCanManageOffers] = useState(true);
-  const [newCanManageUsers, setNewCanManageUsers] = useState(false);
-
-  const [visitStats, setVisitStats] = useState<VisitStat[]>([]);
-  const [visitsLoading, setVisitsLoading] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-
-      if (session?.user?.email) {
-        fetchAdminProfile(session.user.email);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-
-      if (session?.user?.email) {
-        fetchAdminProfile(session.user.email);
-      } else {
-        setAdminProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchAdminProfile = async (userEmail: string) => {
-    setError(null);
-
-    const { data, error } = await supabase
-      .from("admin_users")
-      .select(
-        "id,email,role,can_manage_ads,can_manage_offers,can_manage_users",
-      )
-      .eq("email", userEmail)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Erreur profil admin:", error.message);
-      setAdminProfile(null);
-      setError("Impossible de vérifier les droits d'administration.");
-      return;
-    }
-
-    if (!data) {
-      setAdminProfile(null);
-      setError("Votre compte n'a pas les droits d'administration.");
-      return;
-    }
-
-    setAdminProfile(data as AdminProfile);
-
-    if (data.role === "super_admin") {
-      fetchSubAdmins();
-    }
-
-    fetchVisitStats();
-  };
-
-  const fetchVisitStats = async () => {
-    setVisitsLoading(true);
-
-    const { data, error } = await supabase
-      .from("app_visits")
-      .select("visit_date");
-
-    if (error) {
-      console.error("Erreur statistiques visiteurs:", error.message);
-      setVisitsLoading(false);
-      return;
-    }
-
-    const grouped = new Map<string, number>();
-
-    (data || []).forEach((visit) => {
-      grouped.set(
-        visit.visit_date,
-        (grouped.get(visit.visit_date) || 0) + 1,
-      );
-    });
-
-    const stats: VisitStat[] = Array.from(grouped.entries())
-      .map(([visit_date, visiteurs_uniques]) => ({
-        visit_date,
-        visiteurs_uniques,
-      }))
-      .sort((a, b) => b.visit_date.localeCompare(a.visit_date));
-
-    setVisitStats(stats);
-    setVisitsLoading(false);
-  };
-
-  const fetchSubAdmins = async () => {
-    const { data, error } = await supabase
-      .from("admin_users")
-      .select(
-        "id,email,role,can_manage_ads,can_manage_offers,can_manage_users",
-      )
-      .order("email");
-
-    if (!error && data) {
-      setSubAdmins(data as AdminProfile[]);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    setLoading(true);
-    setError(null);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-
-    if (error) {
-      setError("Identifiants incorrects. Veuillez réessayer.");
-    }
-
-    setLoading(false);
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setAdminProfile(null);
-    setSubAdmins([]);
-    setVisitStats([]);
-  };
-
-  const handleAddSubAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newAdminEmail.trim()) {
-      return;
-    }
-
-    const { error } = await supabase.from("admin_users").insert({
-      email: newAdminEmail.trim().toLowerCase(),
-      role: "sub_admin",
-      can_manage_ads: newCanManageAds,
-      can_manage_offers: newCanManageOffers,
-      can_manage_users: newCanManageUsers,
-    });
-
-    if (error) {
-      alert("Erreur lors de l'ajout : " + error.message);
-      return;
-    }
-
-    alert("Sous-administrateur ajouté avec succès.");
-
-    setNewAdminEmail("");
-    setNewCanManageAds(true);
-    setNewCanManageOffers(true);
-    setNewCanManageUsers(false);
-
-    fetchSubAdmins();
-  };
-
-  const handleDeleteSubAdmin = async (id: string) => {
-    if (
-      !window.confirm(
-        "Voulez-vous vraiment supprimer cet administrateur ?",
-      )
-    ) {
-      return;
-    }
-
-    const { error } = await supabase
-      .from("admin_users")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      alert("Erreur de suppression : " + error.message);
-      return;
-    }
-
-    fetchSubAdmins();
-  };
-
-  if (!session) {
+  if (loading) {
     return (
-      <div
-        style={{
-          maxWidth: "400px",
-          margin: "50px auto",
-          padding: "20px",
-          border: "1px solid #ccc",
-          borderRadius: "8px",
-        }}
-      >
-        <h2>Portail d'administration</h2>
+      <AppLayout>
+        <div className="p-6 text-center">Chargement...</div>
+      </AppLayout>
+    );
+  }
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+  if (!user) {
+    return (
+      <AppLayout>
+        <LoginRequired />
+      </AppLayout>
+    );
+  }
 
-        <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: "15px" }}>
-            <label>Email Admin :</label>
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!title.trim()) {
+      toast.error("Le titre est obligatoire.");
+      return;
+    }
+
+    if (!whatsapp.trim()) {
+      toast.error("Le numéro WhatsApp est obligatoire.");
+      return;
+    }
+
+    if (photos.length > 3) {
+      toast.error("Vous pouvez ajouter au maximum 3 photos.");
+      return;
+    }
+
+    try {
+      setPublishing(true);
+
+      const phone = normalizePhone(whatsapp);
+
+      if (!phone) {
+        toast.error("Numéro WhatsApp invalide.");
+        return;
+      }
+
+      const photoUrls: string[] = [];
+
+      for (const file of photos) {
+        const url = await uploadImage(file, user.id);
+        photoUrls.push(url);
+      }
+
+      const { error } = await supabase.from("ads").insert({
+        user_id: user.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        category: category.trim() || null,
+        price: price ? Number(price) : null,
+        location: location.trim() || null,
+        whatsapp_phone: phone,
+        photo_urls: photoUrls,
+        allow_negotiation: allowNegotiation,
+        trade_enabled: tradeEnabled,
+        status: "available",
+      });
+
+      if (error) {
+        console.error(error);
+        toast.error("Impossible de publier l'annonce.");
+        return;
+      }
+
+      toast.success("Annonce publiée avec succès.");
+
+      setTitle("");
+      setDescription("");
+      setCategory("");
+      setPrice("");
+      setLocation("");
+      setWhatsapp("");
+      setAllowNegotiation(true);
+      setTradeEnabled(false);
+      setPhotos([]);
+    } catch (error) {
+      console.error(error);
+      toast.error("Une erreur est survenue pendant la publication.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  return (
+    <AppLayout>
+      <main className="mx-auto w-full max-w-3xl px-4 py-8">
+        <div className="mb-8">
+          <Link
+            to="/"
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            ← Retour à l'accueil
+          </Link>
+
+          <h1 className="mt-4 text-3xl font-bold tracking-tight">
+            Publier une annonce
+          </h1>
+
+          <p className="mt-2 text-muted-foreground">
+            Présentez votre produit aux acheteurs de Stuff Market.
+          </p>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6 rounded-3xl border bg-card p-6 shadow-sm"
+        >
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Nom du produit *
+            </label>
 
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: "100%",
-                padding: "8px",
-                marginTop: "5px",
-              }}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex. iPhone 13"
+              className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
             />
           </div>
 
-          <div style={{ marginBottom: "15px" }}>
-            <label>Mot de passe :</label>
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Description
+            </label>
+
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Décrivez votre produit..."
+              rows={5}
+              className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Catégorie
+              </label>
+
+              <input
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="Ex. Téléphones"
+                className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Prix en FCFA
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="Ex. 150000"
+                className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Localisation
+              </label>
+
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Ex. Ouagadougou"
+                className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                WhatsApp *
+              </label>
+
+              <input
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="+226..."
+                className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Photos
+            </label>
 
             <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: "100%",
-                padding: "8px",
-                marginTop: "5px",
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []).slice(0, 3);
+                setPhotos(files);
               }}
+              className="w-full rounded-xl border p-3"
             />
+
+            <p className="mt-2 text-xs text-muted-foreground">
+              Maximum 3 photos.
+            </p>
+          </div>
+
+          <div className="space-y-3 rounded-2xl border p-4">
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={allowNegotiation}
+                onChange={(e) => setAllowNegotiation(e.target.checked)}
+                className="h-5 w-5"
+              />
+
+              <span>
+                <strong>J'accepte le marchandage</strong>
+                <span className="block text-sm text-muted-foreground">
+                  Les acheteurs pourront proposer un autre prix.
+                </span>
+              </span>
+            </label>
+
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={tradeEnabled}
+                onChange={(e) => setTradeEnabled(e.target.checked)}
+                className="h-5 w-5"
+              />
+
+              <span>
+                <strong>J'accepte le troc</strong>
+                <span className="block text-sm text-muted-foreground">
+                  Les acheteurs pourront proposer un échange.
+                </span>
+              </span>
+            </label>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            style={{
-              padding: "10px 15px",
-              cursor: loading ? "not-allowed" : "pointer",
-              width: "100%",
-            }}
+            disabled={publishing}
+            className="w-full rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {loading ? "Connexion..." : "Se connecter"}
+            {publishing ? "Publication..." : "Publier l'annonce"}
           </button>
         </form>
-      </div>
-    );
-  }
-
-  if (!adminProfile) {
-    return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        <h2>Accès refusé</h2>
-
-        <p style={{ color: "red" }}>
-          {error ||
-            "Votre compte n'a pas les privilèges d'administration requis."}
-        </p>
-
-        <button
-          onClick={handleLogout}
-          style={{
-            marginTop: "10px",
-            padding: "8px 16px",
-          }}
-        >
-          Se déconnecter
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      style={{
-        padding: "20px",
-        maxWidth: "800px",
-        margin: "0 auto",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: "15px",
-        }}
-      >
-        <h1>Tableau de bord Admin</h1>
-
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: "8px 12px",
-          }}
-        >
-          Déconnexion
-        </button>
-      </div>
-
-      <p>
-        Connecté en tant que : <strong>{adminProfile.email}</strong>{" "}
-        ({adminProfile.role})
-      </p>
-
-      {/* STATISTIQUES DES VISITEURS */}
-      <section
-        style={{
-          border: "1px solid #ddd",
-          padding: "15px",
-          marginBottom: "20px",
-          borderRadius: "8px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
-          <h3>Visiteurs de l'application</h3>
-
-          <button
-            onClick={fetchVisitStats}
-            disabled={visitsLoading}
-            style={{
-              padding: "7px 12px",
-              cursor: visitsLoading ? "not-allowed" : "pointer",
-            }}
-          >
-            {visitsLoading ? "Actualisation..." : "Actualiser"}
-          </button>
-        </div>
-
-        {visitStats.length === 0 ? (
-          <p>Aucune visite enregistrée pour le moment.</p>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                marginTop: "10px",
-              }}
-            >
-              <thead>
-                <tr>
-                  <th
-                    style={{
-                      textAlign: "left",
-                      padding: "10px",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    Jour
-                  </th>
-
-                  <th
-                    style={{
-                      textAlign: "right",
-                      padding: "10px",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    Visiteurs
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {visitStats.map((stat) => (
-                  <tr key={stat.visit_date}>
-                    <td
-                      style={{
-                        padding: "10px",
-                        borderBottom: "1px solid #eee",
-                      }}
-                    >
-                      {new Date(
-                        `${stat.visit_date}T00:00:00`,
-                      ).toLocaleDateString("fr-FR")}
-                    </td>
-
-                    <td
-                      style={{
-                        padding: "10px",
-                        borderBottom: "1px solid #eee",
-                        textAlign: "right",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {stat.visiteurs_uniques}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {adminProfile.can_manage_ads && (
-        <section
-          style={{
-            border: "1px solid #ddd",
-            padding: "15px",
-            marginBottom: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3>Gestion des publicités</h3>
-          <p>Module de gestion des publicités.</p>
-        </section>
-      )}
-
-      {adminProfile.can_manage_offers && (
-        <section
-          style={{
-            border: "1px solid #ddd",
-            padding: "15px",
-            marginBottom: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3>Gestion des services</h3>
-          <p>Module de gestion des services.</p>
-        </section>
-      )}
-
-      {adminProfile.can_manage_users && (
-        <section
-          style={{
-            border: "1px solid #ddd",
-            padding: "15px",
-            marginBottom: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3>Gestion des utilisateurs</h3>
-          <p>Module de gestion des utilisateurs.</p>
-        </section>
-      )}
-
-      {adminProfile.role === "super_admin" && (
-        <section
-          style={{
-            border: "1px solid #ddd",
-            padding: "15px",
-            marginBottom: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3>Gestion des sous-administrateurs</h3>
-
-          <form
-            onSubmit={handleAddSubAdmin}
-            style={{ marginBottom: "20px" }}
-          >
-            <h4>Ajouter un sous-admin</h4>
-
-            <input
-              type="email"
-              placeholder="Email du sous-admin"
-              value={newAdminEmail}
-              onChange={(e) => setNewAdminEmail(e.target.value)}
-              required
-              style={{
-                padding: "8px",
-                width: "220px",
-                marginRight: "10px",
-                marginBottom: "10px",
-              }}
-            />
-
-            <div style={{ marginBottom: "10px" }}>
-              <label style={{ marginRight: "10px" }}>
-                <input
-                  type="checkbox"
-                  checked={newCanManageAds}
-                  onChange={(e) =>
-                    setNewCanManageAds(e.target.checked)
-                  }
-                />{" "}
-                Publicités
-              </label>
-
-              <label style={{ marginRight: "10px" }}>
-                <input
-                  type="checkbox"
-                  checked={newCanManageOffers}
-                  onChange={(e) =>
-                    setNewCanManageOffers(e.target.checked)
-                  }
-                />{" "}
-                Services
-              </label>
-
-              <label style={{ marginRight: "10px" }}>
-                <input
-                  type="checkbox"
-                  checked={newCanManageUsers}
-                  onChange={(e) =>
-                    setNewCanManageUsers(e.target.checked)
-                  }
-                />{" "}
-                Utilisateurs
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              style={{
-                padding: "8px 12px",
-              }}
-            >
-              Ajouter
-            </button>
-          </form>
-
-          <h4>Liste des administrateurs</h4>
-
-          <ul
-            style={{
-              listStyle: "none",
-              padding: 0,
-            }}
-          >
-            {subAdmins.map((sub) => (
-              <li
-                key={sub.id}
-                style={{
-                  padding: "8px 0",
-                  borderBottom: "1px solid #eee",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "10px",
-                }}
-              >
-                <span>
-                  <strong>{sub.email}</strong> - {sub.role}
-                  {" · "}
-                  Publicités : {sub.can_manage_ads ? "Oui" : "Non"}
-                  {" · "}
-                  Services : {sub.can_manage_offers ? "Oui" : "Non"}
-                  {" · "}
-                  Utilisateurs : {sub.can_manage_users ? "Oui" : "Non"}
-                </span>
-
-                {sub.role !== "super_admin" && (
-                  <button
-                    onClick={() => handleDeleteSubAdmin(sub.id)}
-                    style={{ color: "red" }}
-                  >
-                    Supprimer
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </div>
+      </main>
+    </AppLayout>
   );
 }
