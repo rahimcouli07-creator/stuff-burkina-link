@@ -22,6 +22,7 @@ export type Annonce = {
   reference: string | null;
   allow_negotiation: boolean;
   status: string | null;
+  trade_enabled: boolean;
 };
 
 export type Service = {
@@ -82,24 +83,30 @@ export function normalizePhone(value: string) {
   return value.replace(/\D/g, "");
 }
 
-export async function uploadImage(file: File) {
-  const ext = file.name.split(".").pop() || "jpg";
-  const path = `${crypto.randomUUID()}.${ext}`;
+/**
+ * Upload d'une photo de produit.
+ *
+ * Le chemin commence obligatoirement par l'UUID de l'utilisateur
+ * afin de respecter les politiques RLS du bucket product-images.
+ */
+export async function uploadImage(file: File, userId: string) {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+
+  const path = `${userId}/${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage
-    .from("images")
+    .from("product-images")
     .upload(path, file, {
       cacheControl: "3600",
       upsert: false,
+      contentType: file.type || "image/jpeg",
     });
 
   if (error) throw error;
 
-  const { data, error: signError } = await supabase.storage
-    .from("images")
-    .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+  const { data } = supabase.storage
+    .from("product-images")
+    .getPublicUrl(path);
 
-  if (signError) throw signError;
-
-  return data.signedUrl;
+  return data.publicUrl;
 }
